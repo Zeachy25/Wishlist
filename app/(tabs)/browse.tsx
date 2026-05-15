@@ -1,41 +1,45 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
   Animated,
   Dimensions,
-  SafeAreaView,
+  FlatList,
   Keyboard,
-} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useStore } from '../../src/store/useStore';
-import { searchProducts } from '../../src/services/mockData';
-import { Product } from '../../src/types';
-import SearchProductCard from '../../src/components/SearchProductCard';
-import SkeletonLoader from '../../src/components/SkeletonLoader';
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import SearchProductCard from "../../src/components/SearchProductCard";
+import SkeletonLoader from "../../src/components/SkeletonLoader";
+import { searchProducts } from "../../src/services/mockData";
+import { useStore } from "../../src/store/useStore";
+import { Product } from "../../src/types";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-type FilterType = 'All' | 'Under ₱1,000' | '₱1k-₱5k' | 'Top Rated';
-type SortType = 'Best Match' | 'Price: Low to High' | 'Price: High to Low' | 'Top Rated';
+type FilterType = "All" | "Under ₱1,000" | "₱1k-₱5k" | "Top Rated";
+type SortType =
+  | "Best Match"
+  | "Price: Low to High"
+  | "Price: High to Low"
+  | "Top Rated";
 
-const FILTERS: FilterType[] = ['All', 'Under ₱1,000', '₱1k-₱5k', 'Top Rated'];
+const FILTERS: FilterType[] = ["All", "Under ₱1,000", "₱1k-₱5k", "Top Rated"];
 
 export default function BrowseScreen() {
   const router = useRouter();
   const addToWishlist = useStore((state) => state.addToWishlist);
 
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  
-  const [activeFilter, setActiveFilter] = useState<FilterType>('All');
-  const [activeSort, setActiveSort] = useState<SortType>('Best Match');
-  
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  const [activeFilter, setActiveFilter] = useState<FilterType>("All");
+  const [activeSort, setActiveSort] = useState<SortType>("Best Match");
+
   const [data, setData] = useState<Product[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -67,7 +71,11 @@ export default function BrowseScreen() {
     fetchData(debouncedQuery, 1, true);
   }, [debouncedQuery]);
 
-  const fetchData = async (searchQuery: string, pageNum: number, isReset: boolean) => {
+  const fetchData = async (
+    searchQuery: string,
+    pageNum: number,
+    isReset: boolean,
+  ) => {
     if (isReset) {
       setLoading(true);
     } else {
@@ -76,17 +84,17 @@ export default function BrowseScreen() {
 
     try {
       const response = await searchProducts(searchQuery, pageNum, 20);
-      
+
       if (isReset) {
         setData(response.data);
       } else {
         setData((prev) => [...prev, ...response.data]);
       }
-      
+
       setTotalCount(response.totalCount);
       setHasMore(response.data.length === 20);
     } catch (error) {
-      console.error('Failed to fetch search results:', error);
+      console.error("Failed to fetch search results:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -126,20 +134,22 @@ export default function BrowseScreen() {
     let result = [...data];
 
     // Client-side filtering
-    if (activeFilter === 'Under ₱1,000') {
-      result = result.filter(p => p.current_price < 1000);
-    } else if (activeFilter === '₱1k-₱5k') {
-      result = result.filter(p => p.current_price >= 1000 && p.current_price <= 5000);
-    } else if (activeFilter === 'Top Rated') {
-      result = result.filter(p => p.rating >= 4.5);
+    if (activeFilter === "Under ₱1,000") {
+      result = result.filter((p) => p.current_price < 1000);
+    } else if (activeFilter === "₱1k-₱5k") {
+      result = result.filter(
+        (p) => p.current_price >= 1000 && p.current_price <= 5000,
+      );
+    } else if (activeFilter === "Top Rated") {
+      result = result.filter((p) => p.rating >= 4.5);
     }
 
     // Client-side sorting
-    if (activeSort === 'Price: Low to High') {
+    if (activeSort === "Price: Low to High") {
       result.sort((a, b) => a.current_price - b.current_price);
-    } else if (activeSort === 'Price: High to Low') {
+    } else if (activeSort === "Price: High to Low") {
       result.sort((a, b) => b.current_price - a.current_price);
-    } else if (activeSort === 'Top Rated') {
+    } else if (activeSort === "Top Rated") {
       result.sort((a, b) => b.rating - a.rating);
     }
 
@@ -169,7 +179,11 @@ export default function BrowseScreen() {
           />
         </View>
         <TouchableOpacity style={styles.filterBtn}>
-          <MaterialCommunityIcons name="filter-variant" size={24} color="#1A1A1A" />
+          <MaterialCommunityIcons
+            name="filter-variant"
+            size={24}
+            color="#1A1A1A"
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -178,9 +192,10 @@ export default function BrowseScreen() {
   const renderFilterSortBar = () => (
     <View style={styles.filterSortContainer}>
       <Text style={styles.resultsText}>
-        {totalCount.toLocaleString()} results for &apos;{debouncedQuery || "all"}&apos;
+        {totalCount.toLocaleString()} results for &apos;
+        {debouncedQuery || "all"}
       </Text>
-      
+
       <View style={styles.pillsScroll}>
         {FILTERS.map((filter) => (
           <TouchableOpacity
@@ -188,7 +203,12 @@ export default function BrowseScreen() {
             style={[styles.pill, activeFilter === filter && styles.pillActive]}
             onPress={() => setActiveFilter(filter)}
           >
-            <Text style={[styles.pillText, activeFilter === filter && styles.pillTextActive]}>
+            <Text
+              style={[
+                styles.pillText,
+                activeFilter === filter && styles.pillTextActive,
+              ]}
+            >
               {filter}
             </Text>
           </TouchableOpacity>
@@ -196,22 +216,40 @@ export default function BrowseScreen() {
       </View>
 
       <View style={styles.sortRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.sortDropdown}
           onPress={() => {
             // Simple toggle for demo
-            const sorts: SortType[] = ['Best Match', 'Price: Low to High', 'Price: High to Low', 'Top Rated'];
+            const sorts: SortType[] = [
+              "Best Match",
+              "Price: Low to High",
+              "Price: High to Low",
+              "Top Rated",
+            ];
             const nextIdx = (sorts.indexOf(activeSort) + 1) % sorts.length;
             setActiveSort(sorts[nextIdx]);
           }}
         >
           <Text style={styles.sortText}>Sort: {activeSort}</Text>
-          <MaterialCommunityIcons name="chevron-down" size={16} color="#1A1A1A" />
+          <MaterialCommunityIcons
+            name="chevron-down"
+            size={16}
+            color="#1A1A1A"
+          />
         </TouchableOpacity>
-        
+
         <View style={styles.viewToggles}>
-          <MaterialCommunityIcons name="view-grid-outline" size={20} color="#1A365D" style={styles.viewIcon} />
-          <MaterialCommunityIcons name="format-list-bulleted" size={20} color="#999999" />
+          <MaterialCommunityIcons
+            name="view-grid-outline"
+            size={20}
+            color="#1A365D"
+            style={styles.viewIcon}
+          />
+          <MaterialCommunityIcons
+            name="format-list-bulleted"
+            size={20}
+            color="#999999"
+          />
         </View>
       </View>
     </View>
@@ -220,8 +258,12 @@ export default function BrowseScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <MaterialCommunityIcons name="magnify" size={64} color="#E0E0E0" />
-      <Text style={styles.emptyText}>No results for &apos;{debouncedQuery}&apos;</Text>
-      <Text style={styles.emptySubtext}>Try checking your spelling or use more general terms.</Text>
+      <Text style={styles.emptyText}>
+        No results for &apos;{debouncedQuery}&apos;
+      </Text>
+      <Text style={styles.emptySubtext}>
+        Try checking your spelling or use more general terms.
+      </Text>
     </View>
   );
 
@@ -229,9 +271,17 @@ export default function BrowseScreen() {
     <View style={styles.loadingGrid}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <View key={i} style={styles.skeletonCard}>
-          <SkeletonLoader height={(width - 36) / 2} borderRadius={8} style={{ marginBottom: 8 }} />
+          <SkeletonLoader
+            height={(width - 36) / 2}
+            borderRadius={8}
+            style={{ marginBottom: 8 }}
+          />
           <SkeletonLoader height={14} width="90%" style={{ marginBottom: 4 }} />
-          <SkeletonLoader height={14} width="70%" style={{ marginBottom: 12 }} />
+          <SkeletonLoader
+            height={14}
+            width="70%"
+            style={{ marginBottom: 12 }}
+          />
           <SkeletonLoader height={18} width="40%" />
         </View>
       ))}
@@ -255,7 +305,10 @@ export default function BrowseScreen() {
           contentContainerStyle={styles.gridContainer}
           columnWrapperStyle={styles.columnWrapper}
           renderItem={({ item }) => (
-            <SearchProductCard product={item} onAddWishlist={handleAddWishlist} />
+            <SearchProductCard
+              product={item}
+              onAddWishlist={handleAddWishlist}
+            />
           )}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
@@ -270,8 +323,16 @@ export default function BrowseScreen() {
       )}
 
       {/* Custom Toast */}
-      <Animated.View style={[styles.toast, { opacity: toastOpacity }]} pointerEvents="none">
-        <MaterialCommunityIcons name="check-circle" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+      <Animated.View
+        style={[styles.toast, { opacity: toastOpacity }]}
+        pointerEvents="none"
+      >
+        <MaterialCommunityIcons
+          name="check-circle"
+          size={20}
+          color="#FFFFFF"
+          style={{ marginRight: 8 }}
+        />
         <Text style={styles.toastText}>Added to Wishlist</Text>
       </Animated.View>
     </SafeAreaView>
@@ -281,58 +342,58 @@ export default function BrowseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   header: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingTop: 12,
     paddingBottom: 12,
     paddingHorizontal: 16,
   },
   headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   backBtn: {
     paddingRight: 12,
   },
   searchBar: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 40,
   },
   searchInput: {
     flex: 1,
-    height: '100%',
+    height: "100%",
     marginLeft: 8,
     fontSize: 14,
-    color: '#1A1A1A',
+    color: "#1A1A1A",
   },
   filterBtn: {
     marginLeft: 12,
     padding: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     borderRadius: 8,
   },
   filterSortContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: "#EEEEEE",
   },
   resultsText: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
     marginTop: 8,
     marginBottom: 12,
   },
   pillsScroll: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 16,
   },
   pill: {
@@ -340,39 +401,39 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
     marginRight: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   pillActive: {
-    backgroundColor: '#1A365D',
-    borderColor: '#1A365D',
+    backgroundColor: "#1A365D",
+    borderColor: "#1A365D",
   },
   pillText: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
   },
   pillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: "#FFFFFF",
+    fontWeight: "500",
   },
   sortRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   sortDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   sortText: {
     fontSize: 13,
-    color: '#1A1A1A',
+    color: "#1A1A1A",
     marginRight: 4,
   },
   viewToggles: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   viewIcon: {
     marginRight: 12,
@@ -381,65 +442,65 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   columnWrapper: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   loadingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     padding: 12,
   },
   skeletonCard: {
     width: (width - 36) / 2,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#E8E8E8',
+    borderColor: "#E8E8E8",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 40,
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: "bold",
+    color: "#1A1A1A",
     marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999999',
-    textAlign: 'center',
+    color: "#999999",
+    textAlign: "center",
   },
   footerLoader: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 16,
   },
   toast: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 40,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(26, 54, 93, 0.9)', // Dark blue
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignSelf: "center",
+    backgroundColor: "rgba(26, 54, 93, 0.9)", // Dark blue
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
   toastText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 14,
   },
 });
