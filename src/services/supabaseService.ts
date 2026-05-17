@@ -41,7 +41,17 @@ export const fetchAlerts = async (userId: string): Promise<Alert[]> => {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(item => ({
+    id: item.id,
+    product_id: item.product_id,
+    old_price: item.old_price,
+    new_price: item.new_price,
+    drop_percent: item.drop_percent,
+    z_score: item.z_score,
+    triggered_at: item.triggered_at,
+    is_read: item.is_read,
+    product: item.products
+  }));
 };
 
 export const fetchWishlist = async (userId: string): Promise<WishlistItem[]> => {
@@ -55,7 +65,12 @@ export const fetchWishlist = async (userId: string): Promise<WishlistItem[]> => 
     return [];
   }
 
-  return data || [];
+  return (data || []).map(item => ({
+    product_id: item.product_id,
+    added_at: item.added_at,
+    target_price: item.target_price,
+    product: item.products
+  }));
 };
 
 export const fetchCartItems = async (userId: string): Promise<CartItemType[]> => {

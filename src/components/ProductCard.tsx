@@ -25,7 +25,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (!product || !product.id) return;
     
     addToCart({
-      id: product.id,
+      id: product.id, // Temporary ID, store will replace with DB ID
       product: product,
       quantity: 1,
       isChecked: true,
@@ -51,51 +51,54 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.9}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: product.image_url }} style={styles.image} />
-        <TouchableOpacity style={styles.heartButton} onPress={toggleWishlist}>
-          <MaterialCommunityIcons
-            name={isWishlisted ? 'heart' : 'heart-outline'}
-            size={20}
-            color={isWishlisted ? '#E53935' : '#666666'}
-          />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.card}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: product.image_url }} style={styles.image} />
+        </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.name} numberOfLines={2}>
-          {product.name}
-        </Text>
-        <Text style={styles.seller} numberOfLines={1}>
-          {product.seller.toUpperCase()}
-        </Text>
-
-        <View style={styles.ratingContainer}>
-          <MaterialCommunityIcons name="star" size={14} color="#FFB300" />
-          <Text style={styles.ratingText}>
-            {product.rating} <Text style={styles.reviewCount}>({product.review_count})</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.name} numberOfLines={2}>
+            {product.name}
           </Text>
-        </View>
+          <Text style={styles.seller} numberOfLines={1}>
+            {product.seller.toUpperCase()}
+          </Text>
 
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>₱{product.current_price.toLocaleString()}</Text>
-          {product.discount_percent ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>SAVE ₱{(product.original_price - product.current_price).toLocaleString()}</Text>
-            </View>
-          ) : (
-            <View style={styles.promoBadge}>
-              <Text style={styles.promoText}>PROMO</Text>
-            </View>
-          )}
-        </View>
+          <View style={styles.ratingContainer}>
+            <MaterialCommunityIcons name="star" size={14} color="#FFB300" />
+            <Text style={styles.ratingText}>
+              {product.rating} <Text style={styles.reviewCount}>({product.review_count})</Text>
+            </Text>
+          </View>
 
-        <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>₱{product.current_price.toLocaleString()}</Text>
+            {product.discount_percent ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>SAVE ₱{(product.original_price - product.current_price).toLocaleString()}</Text>
+              </View>
+            ) : (
+              <View style={styles.promoBadge}>
+                <Text style={styles.promoText}>PROMO</Text>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.heartButton} onPress={toggleWishlist}>
+        <MaterialCommunityIcons
+          name={isWishlisted ? 'heart' : 'heart-outline'}
+          size={20}
+          color={isWishlisted ? '#E53935' : '#666666'}
+        />
+      </TouchableOpacity>
+    </View>
   );
 }
 

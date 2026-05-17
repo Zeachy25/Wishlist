@@ -27,53 +27,55 @@ export default function SearchProductCard({ product, onAddWishlist }: SearchProd
   const isOfficial = product.seller.toLowerCase().includes('official') || product.seller.toLowerCase().includes('authorized');
 
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.9}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: product.image_url }} style={styles.image} />
-        
-        {isOfficial && (
-          <View style={styles.officialBadge}>
-            <Text style={styles.officialText}>OFFICIAL STORE</Text>
-          </View>
-        )}
+    <View style={styles.card}>
+      <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: product.image_url }} style={styles.image} />
+          
+          {isOfficial && (
+            <View style={styles.officialBadge}>
+              <Text style={styles.officialText}>OFFICIAL STORE</Text>
+            </View>
+          )}
 
-        {product.discount_percent ? (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>-{product.discount_percent}%</Text>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.infoContainer}>
-        <Text style={styles.title} numberOfLines={2}>
-          {product.name}
-        </Text>
-
-        <View style={styles.ratingRow}>
-          <MaterialCommunityIcons name="star-outline" size={12} color="#FFB300" />
-          <Text style={styles.ratingText}>
-            {product.rating.toFixed(1)} <Text style={styles.soldText}>· ({product.review_count} sold)</Text>
-          </Text>
-        </View>
-
-        <View style={styles.priceRow}>
-          <Text style={styles.currentPrice}>₱{product.current_price.toLocaleString()}</Text>
           {product.discount_percent ? (
-            <Text style={styles.originalPrice}>₱{product.original_price.toLocaleString()}</Text>
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{product.discount_percent}%</Text>
+            </View>
           ) : null}
         </View>
 
-        <View style={styles.bottomRow}>
-          <View style={styles.freeShippingPill}>
-            <Text style={styles.freeShippingText}>Free Shipping</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.title} numberOfLines={2}>
+            {product.name}
+          </Text>
+
+          <View style={styles.ratingRow}>
+            <MaterialCommunityIcons name="star-outline" size={12} color="#FFB300" />
+            <Text style={styles.ratingText}>
+              {product.rating.toFixed(1)} <Text style={styles.soldText}>· ({product.review_count} sold)</Text>
+            </Text>
           </View>
 
-          <TouchableOpacity style={styles.bellButton} onPress={handleWishlistPress}>
-            <MaterialCommunityIcons name="bell-outline" size={16} color="#666666" />
-          </TouchableOpacity>
+          <View style={styles.priceRow}>
+            <Text style={styles.currentPrice}>₱{product.current_price.toLocaleString()}</Text>
+            {product.discount_percent ? (
+              <Text style={styles.originalPrice}>₱{product.original_price.toLocaleString()}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.bottomRow}>
+            <View style={styles.freeShippingPill}>
+              <Text style={styles.freeShippingText}>Free Shipping</Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.bellButtonContainer} onPress={handleWishlistPress}>
+        <MaterialCommunityIcons name="bell-outline" size={16} color="#666666" />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -182,7 +184,10 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '500',
   },
-  bellButton: {
-    padding: 2,
+  bellButtonContainer: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    padding: 4,
   },
 });

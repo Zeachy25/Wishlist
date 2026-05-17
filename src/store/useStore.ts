@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Alert as RNAlert } from 'react-native';
 import { WishlistItem, Alert, Product, CartItemType } from '../types';
 import { supabase } from '@/config/supabaseConfig';
 import { User } from '@supabase/supabase-js';
@@ -112,8 +113,16 @@ let state: AppState = {
   },
 
   addToWishlist: async (product) => {
-    if (!product || !product.id || !state.user) return;
+    if (!product || !product.id) return;
     
+    if (!state.user) {
+      RNAlert.alert('Login Required', 'Please sign in to add items to your wishlist.');
+      return;
+    }
+    
+    console.log('Adding to wishlist - User ID:', state.user.id);
+    console.log('Adding to wishlist - Product ID:', product.id);
+
     const { error } = await supabase
       .from('wishlist_items')
       .insert({
@@ -122,8 +131,24 @@ let state: AppState = {
         target_price: product.current_price
       });
 
-    if (!error) {
-      state.wishlist = [...state.wishlist, { product_id: product.id, added_at: new Date().toISOString(), target_price: product.current_price, product }];
+    if (error) {
+      console.error('Error adding to wishlist:', error);
+      if (error.code === '23505') { // Unique violation
+        // Already in wishlist, just update local state if needed
+      } else {
+        RNAlert.alert('Error', 'Could not add to wishlist. Please try again.');
+        return;
+      }
+    }
+
+    // Add to local state if not already there
+    if (!state.wishlist.some(w => w.product_id === product.id)) {
+      state.wishlist = [...state.wishlist, { 
+        product_id: product.id, 
+        added_at: new Date().toISOString(), 
+        target_price: product.current_price, 
+        product 
+      }];
       notifyListeners();
     }
   },
@@ -135,10 +160,14 @@ let state: AppState = {
       .eq('user_id', state.user.id)
       .eq('product_id', productId);
 
-    if (!error) {
-      state.wishlist = state.wishlist.filter(w => w.product_id !== productId);
-      notifyListeners();
+    if (error) {
+      console.error('Error removing from wishlist:', error);
+      RNAlert.alert('Error', 'Could not remove from wishlist.');
+      return;
     }
+
+    state.wishlist = state.wishlist.filter(w => w.product_id !== productId);
+    notifyListeners();
   },
   markAlertRead: async (alertId) => {
     const { error } = await supabase
@@ -176,43 +205,57 @@ let state: AppState = {
   },
   
   addToCart: async (item: CartItemType) => {
-    if (!item || !item.product || !state.user) return;
+    if (!item || !item.product) return;
 
-    const existingIndex = state.cartItems.findIndex(i => i.product.id === item.product.id && i.variant === item.variant);
-    
-    if (existingIndex >= 0) {
-      const updatedQuantity = state.cartItems[existingIndex].quantity + item.quantity;
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity: updatedQuantity })
-        .eq('id', state.cartItems[existingIndex].id);
+    if (!state.user) {
+      RNAlert.alert('Login Required', 'Please sign in to add items to your cart.');
+      return;
+    }
 
-      if (!error) {
+    try {
+      const existingIndex = state.cartItems.findIndex(i => 
+        i.product.id === item.product.id && i.variant === item.variant
+      );
+      
+      if (existingIndex >= 0) {
+        const updatedQuantity = state.cartItems[existingIndex].quantity + item.quantity;
+        const { error } = await supabase
+          .from('cart_items')
+          .update({ quantity: updatedQuantity })
+          .eq('id', state.cartItems[existingIndex].id);
+
+        if (error) throw error;
+
         let newItems = [...state.cartItems];
         newItems[existingIndex].quantity = updatedQuantity;
         state.cartItems = newItems;
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .insert({
-          user_id: state.user.id,
-          product_id: item.product.id,
-          quantity: item.quantity,
-          price_at_add: item.priceAtAdd,
-          variant: item.variant,
-          is_checked: true
-        })
-        .select()
-        .single();
+      } else {
+        const { data, error } = await supabase
+          .from('cart_items')
+          .insert({
+            user_id: state.user.id,
+            product_id: item.product.id,
+            quantity: item.quantity,
+            price_at_add: item.priceAtAdd,
+            variant: item.variant,
+            is_checked: true
+          })
+          .select()
+          .single();
 
-      if (!error && data) {
-        state.cartItems = [...state.cartItems, { ...item, id: data.id }];
+        if (error) throw error;
+
+        if (data) {
+          state.cartItems = [...state.cartItems, { ...item, id: data.id }];
+        }
       }
+      
+      state.cartCount = calculateCartCount(state.cartItems);
+      notifyListeners();
+    } catch (error: any) {
+      console.error('Error adding to cart:', error);
+      RNAlert.alert('Error', error.message || 'Could not add to cart. Please try again.');
     }
-    
-    state.cartCount = calculateCartCount(state.cartItems);
-    notifyListeners();
   },
   removeFromCart: async (id: string) => {
     const { error } = await supabase

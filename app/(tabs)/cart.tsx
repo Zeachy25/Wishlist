@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, TextInput, Alert, SafeAreaView } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, TextInput, Alert, SafeAreaView, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
@@ -9,7 +9,9 @@ import { CartItemType } from '../../src/types';
 export default function CartScreen() {
   const router = useRouter();
   
+  const user = useStore(state => state.user);
   const cartItems = useStore(state => state.cartItems);
+  const loadUserData = useStore(state => state.loadUserData);
   const toggleCartItem = useStore(state => state.toggleCartItem);
   const toggleSellerItems = useStore(state => state.toggleSellerItems);
   const updateCartQuantity = useStore(state => state.updateCartQuantity);
@@ -21,6 +23,18 @@ export default function CartScreen() {
   const setUseCoins = useStore(state => state.setUseCoins);
 
   const [voucherCode, setVoucherCode] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    if (user) {
+      setRefreshing(true);
+      try {
+        await loadUserData(user.id);
+      } finally {
+        setRefreshing(false);
+      }
+    }
+  }, [user, loadUserData]);
 
   // Group items by seller
   const groupedItems = useMemo(() => {
@@ -98,7 +112,13 @@ export default function CartScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {Object.keys(groupedItems).map(seller => {
           const items = groupedItems[seller];
           const allSellerItemsChecked = items.length > 0 && items.every(i => i.isChecked);

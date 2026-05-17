@@ -202,7 +202,7 @@ export default function HomeScreen() {
         style={[styles.promoBox, { backgroundColor: "#FFFFFF" }]}
       >
         <Text style={styles.promoTitle}>Collect Vouchers</Text>
-        <Text style={styles.promoSubtitle}>Savings up to â‚±500</Text>
+        <Text style={styles.promoSubtitle}>Savings up to ₱500</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.promoBox, { backgroundColor: "#FFFFFF" }]}
@@ -214,7 +214,7 @@ export default function HomeScreen() {
         style={[styles.promoBox, { backgroundColor: "#1A365D" }]}
       >
         <Text style={[styles.promoTitle, { color: "#FFFFFF" }]}>
-          WatchList Coins
+          WishList Coins
         </Text>
         <Text style={[styles.promoSubtitle, { color: "#E0E0E0" }]}>
           240 available

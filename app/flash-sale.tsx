@@ -4,8 +4,12 @@ import {
   Dimensions,
   FlatList,
   SafeAreaView,
-  StyleSheet
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SearchProductCard from "../src/components/SearchProductCard";
 import { fetchProducts } from "../src/services/supabaseService";
 import { useStore } from "../src/store/useStore";
@@ -42,6 +46,13 @@ export default function FlashSaleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Flash Sale</Text>
+        <View style={{ width: 40 }} />
+      </View>
       <FlatList
         data={products}
         keyExtractor={(item) => item.id}
@@ -60,6 +71,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#EEEEEE",
+  },
+  backBtn: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A1A1A",
   },
   gridContainer: {
     padding: 12,
