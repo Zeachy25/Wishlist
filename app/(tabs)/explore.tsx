@@ -14,7 +14,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
-import { searchProducts } from '../../src/services/mockData';
+import { searchProducts } from '../../src/services/supabaseService';
 import { Product } from '../../src/types';
 import SearchProductCard from '../../src/components/SearchProductCard';
 import SkeletonLoader from '../../src/components/SkeletonLoader';

@@ -1,4 +1,4 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+﻿import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { useFlashSaleTimer } from "../../src/hooks/useFlashSaleTimer";
-import { fetchProducts, mockFlashSales } from "../../src/services/mockData";
+import { fetchProducts } from "../../src/services/supabaseService";
 import { useStore } from "../../src/store/useStore";
 import { Product } from "../../src/types";
 
@@ -40,6 +40,7 @@ export default function HomeScreen() {
   const { timeLeft } = useFlashSaleTimer();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [flashSales, setFlashSales] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,6 +51,8 @@ export default function HomeScreen() {
       setError(null);
       const data = await fetchProducts();
       setProducts(data);
+      // Use products with discount as flash sales
+      setFlashSales(data.filter(p => (p.discount_percent ?? 0) > 0).slice(0, 6));
     } catch (err) {
       setError("Failed to load products. Please try again.");
     } finally {
@@ -157,8 +160,20 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.hScroll}
       >
-        {mockFlashSales.map((item) => (
-          <FlashSaleCard key={item.id} item={item} />
+        {flashSales.map((item) => (
+          <FlashSaleCard 
+            key={item.id} 
+            item={{
+              id: item.id,
+              product_id: item.id,
+              name: item.name,
+              image_url: item.image_url,
+              current_price: item.current_price,
+              original_price: item.original_price,
+              discount_percent: item.discount_percent || 0,
+              claimed_percent: Math.floor(Math.random() * 40) + 60 // Simulated for now
+            }} 
+          />
         ))}
       </ScrollView>
     </View>
@@ -187,7 +202,7 @@ export default function HomeScreen() {
         style={[styles.promoBox, { backgroundColor: "#FFFFFF" }]}
       >
         <Text style={styles.promoTitle}>Collect Vouchers</Text>
-        <Text style={styles.promoSubtitle}>Savings up to ₱500</Text>
+        <Text style={styles.promoSubtitle}>Savings up to â‚±500</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.promoBox, { backgroundColor: "#FFFFFF" }]}
@@ -611,3 +626,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+

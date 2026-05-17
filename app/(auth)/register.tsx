@@ -1,7 +1,6 @@
-import { auth } from "@/config/firebaseConfig";
+import { supabase } from "@/config/supabaseConfig";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -45,26 +44,24 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-      );
-      // Set the user's display name
-      await updateProfile(userCredential.user, {
-        displayName: name,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
       });
-      router.replace("/(tabs)/home");
-    } catch (error: any) {
-      let message = "Failed to create account";
-      if (error.code === "auth/email-already-in-use") {
-        message = "This email is already registered";
-      } else if (error.code === "auth/weak-password") {
-        message = "Password should be at least 6 characters";
-      } else if (error.code === "auth/invalid-email") {
-        message = "Invalid email format";
+
+      if (error) throw error;
+
+      if (data.user) {
+        Alert.alert("Success", "Account created successfully! Please check your email for verification.");
+        router.replace("/(auth)/login");
       }
-      Alert.alert("Registration Failed", message);
+    } catch (error: any) {
+      Alert.alert("Registration Failed", error.message || "Failed to create account");
     } finally {
       setLoading(false);
     }

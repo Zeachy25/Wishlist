@@ -3,24 +3,26 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Ima
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
-import { updateProfile } from 'firebase/auth';
-import { auth } from '@/config/firebaseConfig';
+import { supabase } from '@/config/supabaseConfig';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const user = useStore(state => state.user);
 
-  const [name, setName] = useState(user?.displayName || '');
+  const [name, setName] = useState(user?.user_metadata?.full_name || '');
   const [email, setEmail] = useState(user?.email || '');
 
   const handleSave = async () => {
     try {
       if (user) {
-        await updateProfile(user, { displayName: name });
+        const { error } = await supabase.auth.updateUser({
+          data: { full_name: name }
+        });
+        if (error) throw error;
         Alert.alert('Success', 'Profile updated successfully');
       }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update profile');
     }
   };
 
@@ -49,7 +51,7 @@ export default function PersonalInfoScreen() {
               <MaterialCommunityIcons name="camera-outline" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.pageTitle}>{user?.displayName || 'User'}</Text>
+          <Text style={styles.pageTitle}>{user?.user_metadata?.full_name || 'User'}</Text>
           <Text style={styles.pageSubtitle}>{user?.email}</Text>
         </View>
 

@@ -1,8 +1,7 @@
-import { auth } from "@/config/firebaseConfig";
+import { supabase } from "@/config/supabaseConfig";
 import { useStore } from "@/src/store/useStore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -34,24 +33,19 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      );
-      setUser(userCredential.user);
-      router.replace("/(tabs)/home");
-    } catch (error: any) {
-      let message = "Failed to sign in";
-      if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password"
-      ) {
-        message = "Invalid email or password";
-      } else if (error.code === "auth/invalid-email") {
-        message = "Invalid email format";
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        setUser(data.user);
+        router.replace("/(tabs)/home");
       }
-      Alert.alert("Login Failed", message);
+    } catch (error: any) {
+      Alert.alert("Login Failed", error.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }

@@ -7,24 +7,34 @@ import {
   StyleSheet
 } from "react-native";
 import SearchProductCard from "../src/components/SearchProductCard";
-import { mockProducts } from "../src/services/mockData";
+import { fetchProducts } from "../src/services/supabaseService";
 import { useStore } from "../src/store/useStore";
 import { Product } from "../src/types";
-
-const { width } = Dimensions.get("window");
 
 export default function FlashSaleScreen() {
   const router = useRouter();
   const addToWishlist = useStore((state) => state.addToWishlist);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Filter products that have a discount for "Sales"
-    const discounted = mockProducts.filter(
-      (p) => (p.discount_percent ?? 0) > 0,
-    );
-    setProducts(discounted);
+    const loadProducts = async () => {
+      try {
+        const allProducts = await fetchProducts();
+        // Filter products that have a discount for "Sales"
+        const discounted = allProducts.filter(
+          (p) => (p.discount_percent ?? 0) > 0,
+        );
+        setProducts(discounted);
+      } catch (error) {
+        console.error("Failed to fetch products for flash sale:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProducts();
   }, []);
+
 
   const handleAddWishlist = (product: Product) => {
     addToWishlist(product);

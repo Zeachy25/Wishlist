@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '../../src/store/useStore';
-import { getProductById, getProductPriceHistory, fetchProducts } from '../../src/services/mockData';
+import { getProductById, getProductPriceHistory, fetchProducts } from '../../src/services/supabaseService';
 import { Product, PriceSnapshot } from '../../src/types';
 import { useFlashSaleTimer } from '../../src/hooks/useFlashSaleTimer';
 import SkeletonLoader from '../../src/components/SkeletonLoader';

@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import SearchProductCard from "../../src/components/SearchProductCard";
 import SkeletonLoader from "../../src/components/SkeletonLoader";
-import { searchProducts } from "../../src/services/mockData";
+import { searchProducts } from "../../src/services/supabaseService";
 import { useStore } from "../../src/store/useStore";
 import { Product } from "../../src/types";
 

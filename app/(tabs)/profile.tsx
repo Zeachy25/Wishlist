@@ -3,8 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, SafeAreaVi
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '../../src/store/useStore';
 import { useRouter } from 'expo-router';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/config/firebaseConfig';
+import { supabase } from '@/config/supabaseConfig';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -23,8 +22,9 @@ export default function ProfileScreen() {
           style: "destructive", 
           onPress: async () => {
             try {
-              await signOut(auth);
-              router.replace('/login');
+              const { error } = await supabase.auth.signOut();
+              if (error) throw error;
+              router.replace('/(auth)/login');
             } catch (error) {
               Alert.alert("Error", "Failed to log out");
             }
@@ -41,8 +41,8 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            {user?.photoURL ? (
-              <Image source={{ uri: user.photoURL }} style={styles.avatar} />
+            {user?.user_metadata?.avatar_url ? (
+              <Image source={{ uri: user.user_metadata.avatar_url }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <MaterialCommunityIcons name="account" size={32} color="#FFFFFF" />
@@ -53,7 +53,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>{user?.displayName || 'User'}</Text>
+            <Text style={styles.name}>{user?.user_metadata?.full_name || 'User'}</Text>
             <Text style={styles.email}>{user?.email}</Text>
           </View>
         </View>
