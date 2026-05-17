@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, SafeAreaView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '../../src/store/useStore';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 export default function WishlistScreen() {
   const router = useRouter();
+  const user = useStore(state => state.user);
   const wishlist = useStore(state => state.wishlist);
+  const loadUserData = useStore(state => state.loadUserData);
   const removeFromWishlist = useStore(state => state.removeFromWishlist);
   const addToCart = useStore(state => state.addToCart);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        loadUserData(user.id);
+      }
+    }, [user?.id, loadUserData])
+  );
 
   const handleAddToCart = (product: any) => {
     addToCart({

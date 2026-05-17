@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 40, // increased for status bar
+    marginTop: 10, // Moved up
   },
   headerRight: { flexDirection: "row" },
   iconBtn: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   productImage: { width: width, height: width, resizeMode: "cover" },
   imageIndicator: {
     position: "absolute",
-    top: 16,
+    top: 65, // Moved down
     right: 16,
     backgroundColor: "rgba(0,0,0,0.5)",
     paddingHorizontal: 10,

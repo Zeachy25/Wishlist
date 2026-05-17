@@ -4,50 +4,50 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
 
-// Mock store details based on the seller names in mockData.ts
-const MOCK_STORES: Record<string, any> = {
+// Store details
+const STORES: Record<string, any> = {
   'Sony Official Store': {
-    logo: 'https://via.placeholder.com/60/000000/FFFFFF?text=Sony',
+    logo: 'https://cdn-icons-png.flaticon.com/128/3135/3135768.png',
     followers: '25.4k',
     badge: 'New Drop'
   },
   'NIKE OFFICIAL STORE': {
-    logo: 'https://via.placeholder.com/60/FF0000/FFFFFF?text=Nike',
+    logo: 'https://cdn-icons-png.flaticon.com/128/732/732229.png',
     followers: '1.2M',
     badge: null
   },
   'Fujifilm': {
-    logo: 'https://via.placeholder.com/60/F0E68C/000000?text=Fujifilm',
+    logo: 'https://cdn-icons-png.flaticon.com/128/1042/1042750.png',
     followers: '12.5k',
     badge: 'Flash Sale'
   },
   'Hydro Flask': {
-    logo: 'https://via.placeholder.com/60/ADD8E6/000000?text=Hydro',
+    logo: 'https://cdn-icons-png.flaticon.com/128/3063/3063198.png',
     followers: '8.2k',
     badge: null
   },
   'Audio Tech Store': {
-    logo: 'https://via.placeholder.com/60/333333/FFFFFF?text=Audio',
+    logo: 'https://cdn-icons-png.flaticon.com/128/2907/2907264.png',
     followers: '45.1k',
     badge: 'New Drop'
   },
   'Velocity Sports': {
-    logo: 'https://via.placeholder.com/60/C62828/FFFFFF?text=VS',
+    logo: 'https://cdn-icons-png.flaticon.com/128/850/850960.png',
     followers: '12.5k',
     badge: 'New Drop'
   },
   'Chronos Timepieces': {
-    logo: 'https://via.placeholder.com/60/1A1A1A/FFFFFF?text=CT',
+    logo: 'https://cdn-icons-png.flaticon.com/128/2838/2838775.png',
     followers: '8.2k',
     badge: null
   },
   'Urban Tread': {
-    logo: 'https://via.placeholder.com/60/388E3C/FFFFFF?text=UT',
+    logo: 'https://cdn-icons-png.flaticon.com/128/2589/2589896.png',
     followers: '45.1k',
     badge: null
   },
   'Sonic Studio': {
-    logo: 'https://via.placeholder.com/60/1A365D/FFFFFF?text=SS',
+    logo: 'https://cdn-icons-png.flaticon.com/128/3050/3050239.png',
     followers: '2.3k',
     badge: null
   }
