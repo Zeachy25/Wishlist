@@ -4,17 +4,26 @@ import {
   calculateAnomaly,
   filterByTimeWindow,
 } from "../algorithms/priceProcessor";
+import { cacheProducts, getCachedProducts } from "./dbService";
 import { Alert, CartItemType, Product, WishlistItem } from "../types";
 
 export const fetchProducts = async (): Promise<Product[]> => {
   const { data, error } = await supabase.from("products").select("*");
 
-  if (error) {
-    console.error("Error fetching products:", error);
-    throw error;
+  if (!error && data) {
+    cacheProducts(data).catch(console.error);
+    return data;
   }
 
-  return data || [];
+  console.error("Error fetching products:", error);
+
+  const cached = await getCachedProducts();
+  if (cached.length > 0) {
+    console.log("Falling back to cached products");
+    return cached;
+  }
+
+  throw error;
 };
 
 export const getProductById = async (id: string): Promise<Product | null> => {
@@ -260,11 +269,11 @@ export const checkPriceDrops = async (userId: string): Promise<number> => {
         continue;
       }
 
-      // Use z-score anomaly detection with lowered threshold (1.0 instead of 1.5)
+      // Use z-score anomaly detection with threshold of 1.5 standard deviations
       const { isAnomaly, zScore } = calculateAnomaly(
         buffer.data,
         currentPrice,
-        1.0, // LOWERED THRESHOLD for better sensitivity
+        1.5,
       );
 
       if (isAnomaly) {

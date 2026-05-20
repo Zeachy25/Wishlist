@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '../src/store/useStore';
@@ -8,8 +9,8 @@ export default function OrderSuccessScreen() {
   const router = useRouter();
   
   const handleBackToHome = () => {
-    // Navigate to the (tabs) root layout
-    router.replace('/(tabs)/home');
+    // Navigate to the (drawer) root layout
+    router.replace('/(drawer)/(tabs)/home');
   };
 
   return (

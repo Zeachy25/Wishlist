@@ -27,3 +27,25 @@ export const getDb = () => {
   if (!db) throw new Error('Database not initialized');
   return db;
 };
+
+export const cacheProducts = async (products: any[]) => {
+  const database = getDb();
+  const insertStmt = database.prepareSync(
+    'INSERT OR REPLACE INTO products (id, name, current_price, image_url, category) VALUES (?, ?, ?, ?, ?)'
+  );
+  for (const p of products) {
+    insertStmt.executeAsync(p.id, p.name, p.current_price, p.image_url, p.category);
+  }
+};
+
+export const getCachedProducts = async (): Promise<any[]> => {
+  const database = getDb();
+  const rows = await database.getAllAsync('SELECT * FROM products');
+  return rows.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    current_price: r.current_price,
+    image_url: r.image_url,
+    category: r.category,
+  }));
+};

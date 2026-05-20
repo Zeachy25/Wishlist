@@ -3,12 +3,12 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
     FlatList,
-    SafeAreaView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { filterByTimeWindow } from "../src/algorithms/priceProcessor";
 import SearchProductCard from "../src/components/SearchProductCard";
 import { useStore } from "../src/store/useStore";
@@ -19,6 +19,8 @@ export default function PriceDropsScreen() {
   const alerts = useStore((state) => state.alerts);
   const addToWishlist = useStore((state) => state.addToWishlist);
   const [showRecentOnly, setShowRecentOnly] = useState(false);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
 
   const filteredAlerts = showRecentOnly
     ? alerts.filter(

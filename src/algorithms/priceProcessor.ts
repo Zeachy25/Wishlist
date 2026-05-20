@@ -37,7 +37,7 @@ export class CircularBuffer {
 export const calculateAnomaly = (
   buffer: PriceSnapshot[],
   currentPrice: number,
-  threshold: number = 1.0,
+  threshold: number = 1.5,
 ): { isAnomaly: boolean; zScore: number } => {
   if (buffer.length < 1) return { isAnomaly: false, zScore: 0 };
 

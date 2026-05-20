@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, TextInput, Alert, SafeAreaView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, Switch, TextInput, Alert, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useStore } from '../../src/store/useStore';
-import CartItem from '../../src/components/CartItem';
-import { CartItemType } from '../../src/types';
+import { useStore } from '../../../src/store/useStore';
+import CartItem from '../../../src/components/CartItem';
+import { CartItemType } from '../../../src/types';
 
 export default function CartScreen() {
   const router = useRouter();
@@ -24,12 +25,16 @@ export default function CartScreen() {
 
   const [voucherCode, setVoucherCode] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const onRefresh = useCallback(async () => {
     if (user) {
       setRefreshing(true);
+      setError(null);
       try {
         await loadUserData(user.id);
+      } catch (err: any) {
+        setError(err.message || "Failed to load cart");
       } finally {
         setRefreshing(false);
       }
@@ -62,6 +67,14 @@ export default function CartScreen() {
   const rawTotal = subtotal + shippingCost - activeVoucherDiscount - coinsDiscount;
   const total = Math.max(0, rawTotal);
 
+  const sections = useMemo(() => {
+    return Object.keys(groupedItems).map(seller => ({
+      title: seller,
+      data: groupedItems[seller],
+      key: seller,
+    }));
+  }, [groupedItems]);
+
   const handleApplyVoucher = () => {
     if (!voucherCode.trim()) {
       setVoucherDiscount(0);
@@ -82,13 +95,26 @@ export default function CartScreen() {
     router.push('/checkout');
   };
 
+  if (error) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.emptyContainer}>
+        <MaterialCommunityIcons name="alert-circle-outline" size={80} color="#E0E0E0" />
+        <Text style={styles.emptyTitle}>Something went wrong</Text>
+        <Text style={styles.emptySubtext}>{error}</Text>
+        <TouchableOpacity style={styles.shopBtn} onPress={onRefresh}>
+          <Text style={styles.shopBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   if (cartItems.length === 0) {
     return (
-      <SafeAreaView style={styles.emptyContainer}>
+      <SafeAreaView edges={['top']} style={styles.emptyContainer}>
         <MaterialCommunityIcons name="cart-outline" size={80} color="#E0E0E0" />
         <Text style={styles.emptyTitle}>Your cart is empty</Text>
         <Text style={styles.emptySubtext}>Looks like you haven&apos;t added anything yet.</Text>
-        <TouchableOpacity style={styles.shopBtn} onPress={() => router.push('/(tabs)/browse')}>
+        <TouchableOpacity style={styles.shopBtn} onPress={() => router.push('/(drawer)/(tabs)/browse')}>
           <Text style={styles.shopBtnText}>Start Shopping</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -96,7 +122,7 @@ export default function CartScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
@@ -112,23 +138,24 @@ export default function CartScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      >
-        {Object.keys(groupedItems).map(seller => {
-          const items = groupedItems[seller];
+        renderSectionHeader={({ section }) => {
+          const items = section.data;
           const allSellerItemsChecked = items.length > 0 && items.every(i => i.isChecked);
 
           return (
-            <View key={seller} style={styles.sellerGroup}>
+            <View style={styles.sectionCard}>
               <View style={styles.sellerHeader}>
                 <TouchableOpacity 
                   style={styles.checkboxContainer} 
-                  onPress={() => toggleSellerItems(seller, !allSellerItemsChecked)}
+                  onPress={() => toggleSellerItems(section.title, !allSellerItemsChecked)}
                 >
                   <MaterialCommunityIcons
                     name={allSellerItemsChecked ? 'checkbox-marked' : 'checkbox-blank-outline'}
@@ -136,7 +163,7 @@ export default function CartScreen() {
                     color={allSellerItemsChecked ? '#1A365D' : '#999999'}
                   />
                 </TouchableOpacity>
-                <Text style={styles.sellerName}>{seller}</Text>
+                <Text style={styles.sellerName}>{section.title}</Text>
                 <MaterialCommunityIcons name="chevron-right" size={20} color="#666" />
                 <View style={{ flex: 1 }} />
                 <View style={styles.freeShippingPill}>
@@ -144,55 +171,61 @@ export default function CartScreen() {
                   <Text style={styles.freeShippingText}>FREE SHIPPING</Text>
                 </View>
               </View>
-
-              {items.map(item => (
-                <CartItem 
-                  key={item.id} 
-                  item={item} 
-                  onToggle={toggleCartItem}
-                  onUpdateQuantity={updateCartQuantity}
-                  onRemove={removeFromCart}
-                />
-              ))}
             </View>
           );
-        })}
+        }}
+        renderItem={({ item, index, section }) => {
+          const isLast = index === section.data.length - 1;
+          return (
+            <View style={[styles.itemCard, isLast && styles.itemCardLast]}>
+              <CartItem 
+                item={item} 
+                onToggle={toggleCartItem}
+                onUpdateQuantity={updateCartQuantity}
+                onRemove={removeFromCart}
+              />
+            </View>
+          );
+        }}
+        ListFooterComponent={
+          <View>
+            {/* Voucher Section */}
+            <View style={styles.box}>
+              <View style={styles.boxHeaderRow}>
+                <MaterialCommunityIcons name="ticket-percent-outline" size={20} color="#1A365D" />
+                <Text style={styles.boxTitle}>Apply Voucher / Promo Code</Text>
+              </View>
+              <View style={styles.voucherInputRow}>
+                <TextInput
+                  style={styles.voucherInput}
+                  placeholder="Enter code"
+                  value={voucherCode}
+                  onChangeText={setVoucherCode}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity style={styles.applyBtn} onPress={handleApplyVoucher}>
+                  <Text style={styles.applyBtnText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-        {/* Voucher Section */}
-        <View style={styles.box}>
-          <View style={styles.boxHeaderRow}>
-            <MaterialCommunityIcons name="ticket-percent-outline" size={20} color="#1A365D" />
-            <Text style={styles.boxTitle}>Apply Voucher / Promo Code</Text>
+            {/* Coins Section */}
+            <View style={[styles.box, styles.coinsRow]}>
+              <MaterialCommunityIcons name="alpha-c-circle" size={28} color="#FFB300" />
+              <View style={styles.coinsInfo}>
+                <Text style={styles.coinsTitle}>Use WatchList Coins</Text>
+                <Text style={styles.coinsSubtext}>240 coins = ₱24 off</Text>
+              </View>
+              <Switch
+                value={useCoins}
+                onValueChange={setUseCoins}
+                trackColor={{ false: '#E0E0E0', true: '#1A365D' }}
+                thumbColor={'#FFFFFF'}
+              />
+            </View>
           </View>
-          <View style={styles.voucherInputRow}>
-            <TextInput
-              style={styles.voucherInput}
-              placeholder="Enter code"
-              value={voucherCode}
-              onChangeText={setVoucherCode}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity style={styles.applyBtn} onPress={handleApplyVoucher}>
-              <Text style={styles.applyBtnText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Coins Section */}
-        <View style={[styles.box, styles.coinsRow]}>
-          <MaterialCommunityIcons name="alpha-c-circle" size={28} color="#FFB300" />
-          <View style={styles.coinsInfo}>
-            <Text style={styles.coinsTitle}>Use WatchList Coins</Text>
-            <Text style={styles.coinsSubtext}>240 coins = ₱24 off</Text>
-          </View>
-          <Switch
-            value={useCoins}
-            onValueChange={setUseCoins}
-            trackColor={{ false: '#E0E0E0', true: '#1A365D' }}
-            thumbColor={'#FFFFFF'}
-          />
-        </View>
-      </ScrollView>
+        }
+      />
 
       {/* Summary Footer */}
       <View style={styles.footer}>
@@ -268,13 +301,26 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 200, // Make room for fixed footer
   },
-  sellerGroup: {
+  sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginBottom: 16,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    borderBottomWidth: 0,
+  },
+  itemCard: {
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  itemCardLast: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
     overflow: 'hidden',
+    marginBottom: 16,
   },
   sellerHeader: {
     flexDirection: 'row',

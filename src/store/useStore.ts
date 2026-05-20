@@ -3,12 +3,31 @@ import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { Alert as RNAlert } from "react-native";
 import {
-    fetchAlerts,
-    fetchCartItems,
-    fetchWishlist,
-    initializePriceSnapshot
+  fetchAlerts,
+  fetchCartItems,
+  fetchWishlist,
+  initializePriceSnapshot,
 } from "../services/supabaseService";
-import { Alert, CartItemType, Product, WishlistItem } from "../types";
+import type { Alert, CartItemType, Product, WishlistItem } from "../types";
+
+// ---------------------------------------------------------------------------
+// Architecture note: why a custom pub/sub pattern instead of Zustand
+//
+// This store uses a simple pub/sub + selector hook rather than Zustand for
+// these reasons:
+//   1. Smaller app size — no extra dependency needed for a handful of screens
+//   2. Full type safety — the selector pattern (useStore(s => s.field)) is
+//      identical to Zustand's API, so swapping later is trivial
+//   3. All screens use the same uniform pattern — no mixed state solutions
+//   4. The app has ~10 screens that read state; a full state-management
+//      library would be over-engineering for this scope
+//
+// If the project grows, migrating to Zustand is a mechanical find/replace.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface AppState {
   user: User | null;
@@ -16,19 +35,13 @@ export interface AppState {
   alerts: Alert[];
   unreadCount: number;
   cartItems: CartItemType[];
-  cartCount: number; // Derived: sum of all quantities
+  cartCount: number;
   activeVoucherDiscount: number;
   useCoins: boolean;
   ordersCount: number;
   buyNowItem: CartItemType | null;
   followedStores: string[];
-  pastOrders: {
-    id: string;
-    date: string;
-    items: CartItemType[];
-    total: number;
-    status: string;
-  }[];
+  pastOrders: PastOrder[];
 
   setUser: (user: User | null) => void;
   loadUserData: (uid: string) => Promise<void>;
@@ -39,7 +52,6 @@ export interface AppState {
   setWishlist: (items: WishlistItem[]) => void;
   setAlerts: (alerts: Alert[]) => void;
 
-  // Cart Actions
   addToCart: (item: CartItemType) => Promise<void>;
   removeFromCart: (id: string) => Promise<void>;
   updateCartQuantity: (id: string, quantity: number) => Promise<void>;
@@ -52,15 +64,32 @@ export interface AppState {
   toggleFollowStore: (storeName: string) => void;
 }
 
-const calculateCartCount = (items: CartItemType[]) => {
-  return items.reduce((sum, item) => sum + item.quantity, 0);
-};
+interface PastOrder {
+  id: string;
+  date: string;
+  items: CartItemType[];
+  total: number;
+  status: string;
+}
+
+// ---------------------------------------------------------------------------
+// Store implementation (pub/sub)
+// ---------------------------------------------------------------------------
+
+type Listener = (state: AppState) => void;
+
+const listeners = new Set<Listener>();
 
 const notifyListeners = () => {
-  Promise.resolve().then(() =>
-    listeners.forEach((listener) => listener(state)),
-  );
+  listeners.forEach((l) => l(state));
 };
+
+const calculateCartCount = (items: CartItemType[]) =>
+  items.reduce((sum, item) => sum + item.quantity, 0);
+
+// ---------------------------------------------------------------------------
+// State and actions
+// ---------------------------------------------------------------------------
 
 let state: AppState = {
   user: null,
@@ -75,6 +104,8 @@ let state: AppState = {
   buyNowItem: null,
   followedStores: [],
   pastOrders: [],
+
+  // ---- User / Auth -------------------------------------------------------
 
   setUser: async (user) => {
     state.user = user;
@@ -94,8 +125,8 @@ let state: AppState = {
 
   loadUserData: async (uid: string) => {
     try {
-      const [wishlist, alerts, cartItems, { data: orders }] = await Promise.all(
-        [
+      const [wishlist, alerts, cartItems, { data: orders }] =
+        await Promise.all([
           fetchWishlist(uid),
           fetchAlerts(uid),
           fetchCartItems(uid),
@@ -104,8 +135,7 @@ let state: AppState = {
             .select("*")
             .eq("user_id", uid)
             .order("created_at", { ascending: false }),
-        ],
-      );
+        ]);
 
       state.wishlist = wishlist;
       state.alerts = alerts;
@@ -126,6 +156,8 @@ let state: AppState = {
     }
   },
 
+  // ---- Wishlist ----------------------------------------------------------
+
   addToWishlist: async (product) => {
     if (!product || !product.id) return;
 
@@ -137,30 +169,20 @@ let state: AppState = {
       return;
     }
 
-    console.log("Adding to wishlist - User ID:", state.user.id);
-    console.log("Adding to wishlist - Product ID:", product.id);
-
     const { error } = await supabase.from("wishlist_items").insert({
       user_id: state.user.id,
       product_id: product.id,
       target_price: product.current_price,
     });
 
-    if (error) {
+    if (error && error.code !== "23505") {
       console.error("Error adding to wishlist:", error);
-      if (error.code === "23505") {
-        // Unique violation
-        // Already in wishlist, just update local state if needed
-      } else {
-        RNAlert.alert("Error", "Could not add to wishlist. Please try again.");
-        return;
-      }
+      RNAlert.alert("Error", "Could not add to wishlist. Please try again.");
+      return;
     }
 
-    // Initialize price snapshot for price drop tracking
     await initializePriceSnapshot(product.id);
 
-    // Add to local state if not already there
     if (!state.wishlist.some((w) => w.product_id === product.id)) {
       state.wishlist = [
         ...state.wishlist,
@@ -174,6 +196,7 @@ let state: AppState = {
       notifyListeners();
     }
   },
+
   removeFromWishlist: async (productId) => {
     if (!state.user) return;
     const { error } = await supabase
@@ -191,6 +214,7 @@ let state: AppState = {
     state.wishlist = state.wishlist.filter((w) => w.product_id !== productId);
     notifyListeners();
   },
+
   markAlertRead: async (alertId) => {
     const { error } = await supabase
       .from("alerts")
@@ -205,6 +229,7 @@ let state: AppState = {
       notifyListeners();
     }
   },
+
   setTargetPrice: async (productId, price) => {
     if (!state.user) return;
     const { error } = await supabase
@@ -220,15 +245,19 @@ let state: AppState = {
       notifyListeners();
     }
   },
+
   setWishlist: (items) => {
     state.wishlist = items;
     notifyListeners();
   },
+
   setAlerts: (alerts) => {
     state.alerts = alerts;
     state.unreadCount = alerts.filter((a) => !a.is_read).length;
     notifyListeners();
   },
+
+  // ---- Cart --------------------------------------------------------------
 
   addToCart: async (item: CartItemType) => {
     if (!item || !item.product) return;
@@ -256,7 +285,7 @@ let state: AppState = {
 
         if (error) throw error;
 
-        let newItems = [...state.cartItems];
+        const newItems = [...state.cartItems];
         newItems[existingIndex].quantity = updatedQuantity;
         state.cartItems = newItems;
       } else {
@@ -290,6 +319,7 @@ let state: AppState = {
       );
     }
   },
+
   removeFromCart: async (id: string) => {
     const { error } = await supabase.from("cart_items").delete().eq("id", id);
 
@@ -299,6 +329,7 @@ let state: AppState = {
       notifyListeners();
     }
   },
+
   updateCartQuantity: async (id: string, quantity: number) => {
     if (quantity < 1) {
       await state.removeFromCart(id);
@@ -317,30 +348,36 @@ let state: AppState = {
       }
     }
   },
+
   toggleCartItem: (id: string) => {
     state.cartItems = state.cartItems.map((i) =>
       i.id === id ? { ...i, isChecked: !i.isChecked } : i,
     );
     notifyListeners();
   },
+
   toggleSellerItems: (seller: string, isChecked: boolean) => {
     state.cartItems = state.cartItems.map((i) =>
       i.product.seller === seller ? { ...i, isChecked } : i,
     );
     notifyListeners();
   },
+
   setVoucherDiscount: (amount: number) => {
     state.activeVoucherDiscount = amount;
     notifyListeners();
   },
+
   setUseCoins: (use: boolean) => {
     state.useCoins = use;
     notifyListeners();
   },
+
   setBuyNowItem: (item: CartItemType | null) => {
     state.buyNowItem = item;
     notifyListeners();
   },
+
   placeOrder: async (items, total) => {
     if (!state.user) return;
     const orderId = `WL-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -365,7 +402,6 @@ let state: AppState = {
       state.pastOrders = [newOrder, ...state.pastOrders];
       state.ordersCount = state.pastOrders.length;
 
-      // If these items came from the cart, remove them from Supabase
       const itemIds = items
         .map((i) => i.id)
         .filter((id) => state.cartItems.some((ci) => ci.id === id));
@@ -381,6 +417,9 @@ let state: AppState = {
       notifyListeners();
     }
   },
+
+  // ---- Misc --------------------------------------------------------------
+
   toggleFollowStore: (storeName: string) => {
     if (state.followedStores.includes(storeName)) {
       state.followedStores = state.followedStores.filter(
@@ -393,7 +432,9 @@ let state: AppState = {
   },
 };
 
-const listeners = new Set<(s: AppState) => void>();
+// ---------------------------------------------------------------------------
+// React hook — selector-based subscription
+// ---------------------------------------------------------------------------
 
 export const useStore = <T>(selector: (state: AppState) => T): T => {
   const [selectedState, setSelectedState] = useState(() => selector(state));

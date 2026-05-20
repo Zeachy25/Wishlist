@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
@@ -68,7 +69,7 @@ export default function FollowedStoresScreen() {
     .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
     .map(name => ({
       name,
-      ...(MOCK_STORES[name] || {
+      ...(STORES[name] || {
         logo: 'https://via.placeholder.com/60/CCCCCC/FFFFFF?text=' + name.charAt(0),
         followers: '1.0k',
         badge: null
@@ -160,7 +161,7 @@ export default function FollowedStoresScreen() {
               <Text style={styles.emptyText}>You are not following any stores yet.</Text>
               <TouchableOpacity 
                 style={styles.browseBtn}
-                onPress={() => router.push('/(tabs)/browse')}
+                onPress={() => router.push('/(drawer)/(tabs)/browse')}
               >
                 <Text style={styles.browseBtnText}>Browse Stores</Text>
               </TouchableOpacity>

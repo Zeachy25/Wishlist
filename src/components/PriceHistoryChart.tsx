@@ -89,7 +89,7 @@ export default function PriceHistoryChart({ data }: PriceHistoryChartProps) {
             <Circle cx={minPoint.x} cy={minPoint.y} r="4" fill="#27AE60" />
             <SvgText 
               x={minPoint.x} 
-              y={minPoint.y + 16} 
+              y={minPoint.y - 10} 
               fill="#27AE60" 
               fontSize="10" 
               fontWeight="bold" 

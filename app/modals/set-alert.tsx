@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useStore } from '../../src/store/useStore';
@@ -21,9 +22,10 @@ export default function SetAlertModal() {
   };
 
   return (
+    <SafeAreaView edges={['top']} style={styles.container}>
     <KeyboardAvoidingView 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={{ flex: 1 }}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
@@ -70,6 +72,7 @@ export default function SetAlertModal() {
         </View>
       </View>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

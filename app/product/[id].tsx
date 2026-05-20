@@ -12,13 +12,16 @@ import {
   Animated,
   Dimensions,
   Image,
-  SafeAreaView,
+  Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import PriceHistoryChart from "../../src/components/PriceHistoryChart";
 import SkeletonLoader from "../../src/components/SkeletonLoader";
 import { useFlashSaleTimer } from "../../src/hooks/useFlashSaleTimer";
@@ -32,9 +35,13 @@ import { PriceSnapshot, Product } from "../../src/types";
 
 const { width } = Dimensions.get("window");
 
+const ANDROID_STATUS_BAR = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 0;
+const ANDROID_NAV_BAR = Platform.OS === 'android' ? 0 : 0;
+
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [history, setHistory] = useState<PriceSnapshot[]>([]);
@@ -187,24 +194,24 @@ export default function ProductDetailScreen() {
   const renderHeader = () => (
     <View style={styles.headerRow}>
       <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
+        <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
       </TouchableOpacity>
       <View style={styles.headerRight}>
         <TouchableOpacity style={styles.iconBtn}>
           <MaterialCommunityIcons
             name="share-variant-outline"
             size={24}
-            color="#FFFFFF"
+            color="#1A1A1A"
           />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconBtn}
-          onPress={() => router.push("/(tabs)/cart")}
+          onPress={() => router.push("/(drawer)/(tabs)/cart")}
         >
           <MaterialCommunityIcons
             name="cart-outline"
             size={24}
-            color="#FFFFFF"
+            color="#1A1A1A"
           />
           {cartCount > 0 && (
             <View style={styles.cartBadge}>
@@ -216,7 +223,7 @@ export default function ProductDetailScreen() {
           <MaterialCommunityIcons
             name="dots-horizontal"
             size={24}
-            color="#FFFFFF"
+            color="#1A1A1A"
           />
         </TouchableOpacity>
       </View>
@@ -224,7 +231,7 @@ export default function ProductDetailScreen() {
   );
 
   const renderLoading = () => (
-    <View style={styles.loadingContainer}>
+    <View style={[styles.loadingContainer, { paddingTop: ANDROID_STATUS_BAR }]}>
       {renderHeader()}
       <SkeletonLoader height={width} style={{ marginBottom: 16 }} />
       <View style={{ padding: 16 }}>
@@ -261,13 +268,12 @@ export default function ProductDetailScreen() {
   const images = product.images || [product.image_url];
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Sticky Header */}
-      <View style={styles.headerContainer}>{renderHeader()}</View>
+    <View style={[styles.container, { paddingTop: ANDROID_STATUS_BAR }]}>
+      {renderHeader()}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
         {/* Image Carousel */}
         <View style={styles.carouselContainer}>
@@ -783,7 +789,7 @@ export default function ProductDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 48) + 8 }]}>
         <TouchableOpacity
           style={styles.addToCartBtn}
           onPress={handleAddToCart}
@@ -813,35 +819,30 @@ export default function ProductDetailScreen() {
         />
         <Text style={styles.toastText}>Added to Cart</Text>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
   loadingContainer: { flex: 1, backgroundColor: "#FFFFFF" },
-  headerContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    backgroundColor: "transparent",
-  },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 10, // Moved up
+    marginTop: 0,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   headerRight: { flexDirection: "row" },
   iconBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.3)", // Subtle dark circle for contrast
+    backgroundColor: "#F5F5F5",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
@@ -1033,10 +1034,11 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: "#FFFFFF",
     flexDirection: "row",
-    padding: 12,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: "#EEEEEE",
+    borderTopColor: "#F0F0F0",
   },
   addToCartBtn: {
     flex: 1,
@@ -1045,19 +1047,19 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
-    paddingVertical: 12,
+    marginRight: 12,
+    paddingVertical: 14,
   },
-  addToCartText: { color: "#1A365D", fontSize: 14, fontWeight: "bold" },
+  addToCartText: { color: "#1A365D", fontSize: 16, fontWeight: "bold" },
   buyNowBtn: {
     flex: 1,
     backgroundColor: "#1A365D",
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
-  buyNowText: { color: "#FFFFFF", fontSize: 14, fontWeight: "bold" },
+  buyNowText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   errorText: {
     color: "#E53935",
     marginTop: 16,

@@ -2,13 +2,15 @@ import { supabase } from "@/config/supabaseConfig";
 import { useStore } from "@/src/store/useStore";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import React, { useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -24,6 +27,23 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const redirectUrl = Linking.createURL("/");
+
+  const handleOAuth = async (provider: "google" | "facebook") => {
+    try {
+      const { data } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: redirectUrl },
+      });
+      console.log("OAuth URL:", data?.url);
+      if (data?.url) {
+        await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      }
+    } catch (error: any) {
+      Alert.alert("OAuth Error", error.message || "Failed to sign in");
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -42,7 +62,7 @@ export default function LoginScreen() {
 
       if (data.user) {
         setUser(data.user);
-        router.replace("/(tabs)/home");
+        router.replace("/(drawer)/(tabs)/home");
       }
     } catch (error: any) {
       Alert.alert("Login Failed", error.message || "Failed to sign in");
@@ -143,14 +163,20 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialButton}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() => handleOAuth("google")}
+              >
                 <MaterialCommunityIcons
                   name="google"
                   size={24}
                   color="#EA4335"
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                onPress={() => handleOAuth("facebook")}
+              >
                 <MaterialCommunityIcons
                   name="facebook"
                   size={24}

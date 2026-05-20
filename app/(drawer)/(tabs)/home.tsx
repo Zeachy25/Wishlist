@@ -5,22 +5,22 @@ import {
   Dimensions,
   FlatList,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFlashSaleTimer } from "../../src/hooks/useFlashSaleTimer";
-import { fetchProducts } from "../../src/services/supabaseService";
-import { useStore } from "../../src/store/useStore";
-import { Product } from "../../src/types";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useFlashSaleTimer } from "../../../src/hooks/useFlashSaleTimer";
+import { fetchProducts } from "../../../src/services/supabaseService";
+import { useStore } from "../../../src/store/useStore";
+import { Product } from "../../../src/types";
 
-import FlashSaleCard from "../../src/components/FlashSaleCard";
-import PriceDropCard from "../../src/components/PriceDropCard";
-import ProductCard from "../../src/components/ProductCard";
-import SkeletonLoader from "../../src/components/SkeletonLoader";
+import FlashSaleCard from "../../../src/components/FlashSaleCard";
+import PriceDropCard from "../../../src/components/PriceDropCard";
+import ProductCard from "../../../src/components/ProductCard";
+import SkeletonLoader from "../../../src/components/SkeletonLoader";
 
 const { width } = Dimensions.get("window");
 
@@ -73,7 +73,7 @@ export default function HomeScreen() {
 
   const handleSearchPress = () => {
     // According to specs, tapping search bar navigates to browse
-    router.push("/(tabs)/browse");
+    router.push("/(drawer)/(tabs)/browse");
   };
 
   const renderHeader = () => (
@@ -358,7 +358,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       {renderHeader()}
       {renderContent()}
     </SafeAreaView>

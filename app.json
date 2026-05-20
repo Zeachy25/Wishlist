@@ -21,6 +21,40 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "wishlist",
+              "host": "*",
+              "pathPrefix": "/auth/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "wishlist",
+              "host": "*",
+              "pathPrefix": "/auth/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "package": "com.erlyx.Wishlist"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"

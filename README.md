@@ -1,50 +1,71 @@
-# Welcome to your Expo app 👋
+# Wishlist & Price Drop Notifier
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app that lets you track products, save them to a wishlist, and get notified when prices drop.
 
-## Get started
+## Tech Stack
 
-1. Install dependencies
+- **React Native / Expo** — for the mobile app
+- **Supabase** — for user login and database
+- **SQLite** — for offline data storage
+- **Custom store** — simple pub/sub for managing app state
 
+## Features
+
+- **Wishlist** — save products you want to buy later
+- **Price Drop Alerts** — get notified when a product price goes down
+- **Flash Sale Alerts** — see limited-time deals
+- **Browse Products** — search and filter by category
+- **Price History Charts** — see how prices changed over time
+- **Smart Alerts** — uses Z-score (threshold: 1.5) to find real price drops
+- **User Accounts** — sign up with email, Google, or Facebook
+- **Cart & Checkout** — buy products directly in the app
+
+## Navigation
+
+The app uses 4 types of navigation:
+
+1. **Bottom tabs** — Home, Browse, Wishlist, Profile, Cart
+2. **Drawer** — swipe from the left to see shortcuts
+3. **Stack** — moving between screens like Product Details
+4. **Modals** — pop-up screens like Set Alert
+
+## How to Run
+
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+2. Start the app:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. Open on your phone using Expo Go, or run on an emulator.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run Tests
 
 ```bash
-npm run reset-project
+npm test
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+There are 17 tests for the price drop algorithm and edge cases.
 
-## Learn more
+## Project Structure
 
-To learn more about developing your project with Expo, look at the following resources:
+```
+app/              — Screens and navigation
+src/
+  algorithms/     — Price processing (Z-score logic)
+  components/     — Shared UI parts
+  services/       — Supabase API, SQLite database
+  store/          — App state management
+config/           — Supabase setup
+tests/            — Unit tests
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## OAuth Login
 
-## Join the community
+To use Google or Facebook login, you need to add these URLs in your Supabase dashboard (Authentication > URL Configuration):
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `wishlist:///`
