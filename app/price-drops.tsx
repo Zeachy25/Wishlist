@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,14 +12,19 @@ import { useRouter } from 'expo-router';
 import { useStore } from '../src/store/useStore';
 import SearchProductCard from '../src/components/SearchProductCard';
 import { Product } from '../src/types';
+import { filterByTimeWindow } from '../src/algorithms/priceProcessor';
 
 export default function PriceDropsScreen() {
   const router = useRouter();
   const alerts = useStore((state) => state.alerts);
   const addToWishlist = useStore((state) => state.addToWishlist);
+  const [showRecentOnly, setShowRecentOnly] = useState(false);
 
-  // Extract products from alerts
-  const products = alerts.map(alert => alert.product).filter(Boolean) as Product[];
+  const filteredAlerts = showRecentOnly
+    ? alerts.filter((a) => filterByTimeWindow([{ price: a.new_price, timestamp: a.triggered_at }], 48).length > 0)
+    : alerts;
+
+  const products = filteredAlerts.map(alert => alert.product).filter(Boolean) as Product[];
 
   const handleAddWishlist = (product: Product) => {
     addToWishlist(product);
@@ -32,8 +37,15 @@ export default function PriceDropsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#1A1A1A" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Price Drops</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={() => setShowRecentOnly(!showRecentOnly)}>
+          <MaterialCommunityIcons 
+            name={showRecentOnly ? "filter" : "filter-outline"} 
+            size={24} 
+            color={showRecentOnly ? "#1A365D" : "#666"} 
+          />
+        </TouchableOpacity>
       </View>
+      
       <FlatList
         data={products}
         keyExtractor={(item) => item.id}
@@ -43,10 +55,11 @@ export default function PriceDropsScreen() {
         renderItem={({ item }) => (
           <SearchProductCard product={item} onAddWishlist={handleAddWishlist} />
         )}
+        ListHeaderComponent={showRecentOnly ? <Text style={styles.filterStatus}>Showing last 48 hours</Text> : null}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="tag-off-outline" size={64} color="#E0E0E0" />
-            <Text style={styles.emptyText}>No price drops at the moment.</Text>
+            <Text style={styles.emptyText}>No price drops {showRecentOnly ? "in the last 48 hours" : "at the moment"}.</Text>
           </View>
         }
       />
@@ -76,6 +89,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1A1A1A',
+  },
+  filterStatus: {
+    padding: 16,
+    fontSize: 14,
+    color: '#1A365D',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   gridContainer: {
     padding: 12,

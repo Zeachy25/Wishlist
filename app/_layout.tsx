@@ -6,11 +6,44 @@ import {
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
+import { useEffect } from "react";
+import { initDb } from "@/src/services/dbService";
+import { checkPriceDrops } from "@/src/services/supabaseService";
+import { useStore } from "@/src/store/useStore";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const user = useStore((state) => state.user);
+  const loadUserData = useStore((state) => state.loadUserData);
+
+  useEffect(() => {
+    initDb().catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    let active = true;
+
+    const pollPriceDrops = async () => {
+      if (!user?.id || !active) return;
+      const newAlertCount = await checkPriceDrops(user.id);
+      if (newAlertCount > 0) {
+        loadUserData(user.id);
+      }
+    };
+
+    if (user?.id) {
+      pollPriceDrops();
+      interval = setInterval(pollPriceDrops, 1000 * 60 * 30); // every 30 minutes
+    }
+
+    return () => {
+      active = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [user?.id, loadUserData]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

@@ -60,11 +60,13 @@ export default function ProductDetailScreen() {
   const toastOpacity = useRef(new Animated.Value(0)).current;
 
   const loadProduct = useCallback(async () => {
+    console.log("Loading product with ID:", id);
     if (!id) return;
     try {
       setLoading(true);
       setError(null);
       const data = await getProductById(id as string);
+      console.log("Product data result:", data);
       if (data) {
         setProduct(data);
         if (data.variants?.color?.length)
@@ -81,8 +83,9 @@ export default function ProductDetailScreen() {
       } else {
         setError("Product not found");
       }
-    } catch (e) {
-      setError("Failed to load product");
+    } catch (e: any) {
+      console.error("DEBUG - Product load error:", e);
+      setError(`Failed to load product: ${e.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

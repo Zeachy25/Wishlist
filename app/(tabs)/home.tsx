@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Dimensions,
+  FlatList,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -322,34 +323,44 @@ export default function HomeScreen() {
     </View>
   );
 
+  const renderContent = () => (
+    <FlatList
+      data={loading ? [] : products}
+      keyExtractor={(item) => item.id}
+      numColumns={2}
+      columnWrapperStyle={styles.gridContainer}
+      renderItem={({ item }) => <ProductCard product={item} />}
+      ListHeaderComponent={
+        <>
+          {renderHero()}
+          {renderFlashSale()}
+          {renderCategories()}
+          {renderPromos()}
+          {renderPriceDrops()}
+          {!loading && products.length > 0 && (
+             <Text style={[styles.sectionTitle, { margin: 16 }]}>Recommended For You</Text>
+          )}
+        </>
+      }
+      ListEmptyComponent={
+        loading ? renderLoadingState() : error ? renderErrorState() : renderEmptyState()
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#FF6B00"]}
+        />
+      }
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {renderHeader()}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#FF6B00"]}
-          />
-        }
-        contentContainerStyle={styles.scrollContent}
-      >
-        {renderHero()}
-        {renderFlashSale()}
-        {renderCategories()}
-        {renderPromos()}
-        {renderPriceDrops()}
-
-        {loading
-          ? renderLoadingState()
-          : error
-            ? renderErrorState()
-            : products.length === 0
-              ? renderEmptyState()
-              : renderRecommended()}
-      </ScrollView>
+      {renderContent()}
     </SafeAreaView>
   );
 }
@@ -592,6 +603,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     paddingHorizontal: 16,

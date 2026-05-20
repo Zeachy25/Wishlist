@@ -59,6 +59,7 @@ CREATE TABLE public.alerts (
   old_price NUMERIC,
   new_price NUMERIC,
   drop_percent NUMERIC,
+  z_score NUMERIC,
   triggered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   is_read BOOLEAN DEFAULT FALSE
 );
@@ -116,6 +117,7 @@ CREATE POLICY "Products are viewable by everyone" ON public.products FOR SELECT 
 CREATE POLICY "Users can manage their own wishlist" ON public.wishlist_items FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their own cart" ON public.cart_items FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can view their own alerts" ON public.alerts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own alerts" ON public.alerts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Price history is viewable by everyone" ON public.price_snapshots FOR SELECT USING (true);
 CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own orders" ON public.orders FOR INSERT WITH CHECK (auth.uid() = user_id);

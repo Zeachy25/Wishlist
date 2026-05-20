@@ -25,7 +25,7 @@ export interface Alert {
   old_price: number;
   new_price: number;
   drop_percent: number;
-  z_score: number;
+  z_score?: number;
   triggered_at: string;
   is_read: boolean;
   product?: Product;
