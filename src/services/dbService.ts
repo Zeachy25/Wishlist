@@ -38,6 +38,11 @@ export const cacheProducts = async (products: any[]) => {
   }
 };
 
+export const clearCache = () => {
+  const database = getDb();
+  database.execSync('DELETE FROM products; DELETE FROM wishlist_items;');
+};
+
 export const getCachedProducts = async (): Promise<any[]> => {
   const database = getDb();
   const rows = await database.getAllAsync('SELECT * FROM products');
