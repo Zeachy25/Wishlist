@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  SafeAreaView,
-} from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useStore } from '../src/store/useStore';
-import SearchProductCard from '../src/components/SearchProductCard';
-import { Product } from '../src/types';
-import { filterByTimeWindow } from '../src/algorithms/priceProcessor';
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { filterByTimeWindow } from "../src/algorithms/priceProcessor";
+import SearchProductCard from "../src/components/SearchProductCard";
+import { useStore } from "../src/store/useStore";
+import { Product } from "../src/types";
 
 export default function PriceDropsScreen() {
   const router = useRouter();
@@ -21,10 +21,18 @@ export default function PriceDropsScreen() {
   const [showRecentOnly, setShowRecentOnly] = useState(false);
 
   const filteredAlerts = showRecentOnly
-    ? alerts.filter((a) => filterByTimeWindow([{ price: a.new_price, timestamp: a.triggered_at }], 48).length > 0)
+    ? alerts.filter(
+        (a) =>
+          filterByTimeWindow(
+            [{ price: a.new_price, timestamp: a.triggered_at }],
+            48,
+          ).length > 0,
+      )
     : alerts;
 
-  const products = filteredAlerts.map(alert => alert.product).filter(Boolean) as Product[];
+  const products = filteredAlerts
+    .map((alert) => alert.product)
+    .filter(Boolean) as Product[];
 
   const handleAddWishlist = (product: Product) => {
     addToWishlist(product);
@@ -38,14 +46,14 @@ export default function PriceDropsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Price Drops</Text>
         <TouchableOpacity onPress={() => setShowRecentOnly(!showRecentOnly)}>
-          <MaterialCommunityIcons 
-            name={showRecentOnly ? "filter" : "filter-outline"} 
-            size={24} 
-            color={showRecentOnly ? "#1A365D" : "#666"} 
+          <MaterialCommunityIcons
+            name={showRecentOnly ? "filter" : "filter-outline"}
+            size={24}
+            color={showRecentOnly ? "#1A365D" : "#666"}
           />
         </TouchableOpacity>
       </View>
-      
+
       <FlatList
         data={products}
         keyExtractor={(item) => item.id}
@@ -55,11 +63,22 @@ export default function PriceDropsScreen() {
         renderItem={({ item }) => (
           <SearchProductCard product={item} onAddWishlist={handleAddWishlist} />
         )}
-        ListHeaderComponent={showRecentOnly ? <Text style={styles.filterStatus}>Showing last 48 hours</Text> : null}
+        ListHeaderComponent={
+          showRecentOnly ? (
+            <Text style={styles.filterStatus}>Showing last 48 hours</Text>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="tag-off-outline" size={64} color="#E0E0E0" />
-            <Text style={styles.emptyText}>No price drops {showRecentOnly ? "in the last 48 hours" : "at the moment"}.</Text>
+            <MaterialCommunityIcons
+              name="tag-off-outline"
+              size={64}
+              color="#E0E0E0"
+            />
+            <Text style={styles.emptyText}>
+              No price drops{" "}
+              {showRecentOnly ? "in the last 48 hours" : "at the moment"}.
+            </Text>
           </View>
         }
       />
@@ -70,48 +89,48 @@ export default function PriceDropsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: "#F8F9FA",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: "#EEEEEE",
   },
   backBtn: {
     padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
+    fontWeight: "bold",
+    color: "#1A1A1A",
   },
   filterStatus: {
     padding: 16,
     fontSize: 14,
-    color: '#1A365D',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: "#1A365D",
+    fontWeight: "bold",
+    textAlign: "center",
   },
   gridContainer: {
     padding: 12,
   },
   columnWrapper: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 100,
   },
   emptyText: {
     fontSize: 16,
-    color: '#999999',
+    color: "#999999",
     marginTop: 16,
   },
 });

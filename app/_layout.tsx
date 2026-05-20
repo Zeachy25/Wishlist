@@ -1,15 +1,15 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import { useEffect } from "react";
 import { initDb } from "@/src/services/dbService";
 import { checkPriceDrops } from "@/src/services/supabaseService";
 import { useStore } from "@/src/store/useStore";
+import {
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
