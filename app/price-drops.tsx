@@ -30,7 +30,22 @@ export default function PriceDropsScreen() {
       )
     : alerts;
 
-  const products = filteredAlerts
+  // Deduplicate products by ID and get the latest alert for each product
+  const productMap = new Map<string, (typeof filteredAlerts)[0]>();
+  filteredAlerts.forEach((alert) => {
+    if (alert.product?.id) {
+      const existing = productMap.get(alert.product.id);
+      // Keep the most recent alert for each product
+      if (
+        !existing ||
+        new Date(alert.triggered_at) > new Date(existing.triggered_at)
+      ) {
+        productMap.set(alert.product.id, alert);
+      }
+    }
+  });
+
+  const products = Array.from(productMap.values())
     .map((alert) => alert.product)
     .filter(Boolean) as Product[];
 

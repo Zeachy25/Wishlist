@@ -119,5 +119,6 @@ CREATE POLICY "Users can manage their own cart" ON public.cart_items FOR ALL USI
 CREATE POLICY "Users can view their own alerts" ON public.alerts FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own alerts" ON public.alerts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Price history is viewable by everyone" ON public.price_snapshots FOR SELECT USING (true);
+CREATE POLICY "Authenticated users can record price snapshots" ON public.price_snapshots FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own orders" ON public.orders FOR INSERT WITH CHECK (auth.uid() = user_id);

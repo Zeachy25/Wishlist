@@ -2,13 +2,14 @@ import { initDb } from "@/src/services/dbService";
 import { checkPriceDrops } from "@/src/services/supabaseService";
 import { useStore } from "@/src/store/useStore";
 import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { Alert } from "react-native";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -31,12 +32,16 @@ export default function RootLayout() {
       const newAlertCount = await checkPriceDrops(user.id);
       if (newAlertCount > 0) {
         loadUserData(user.id);
+        Alert.alert(
+          "Price Drop Alert",
+          `You have ${newAlertCount} new wishlist price drop${newAlertCount > 1 ? "s" : ""}!`,
+        );
       }
     };
 
     if (user?.id) {
       pollPriceDrops();
-      interval = setInterval(pollPriceDrops, 1000 * 60 * 30); // every 30 minutes
+      interval = setInterval(pollPriceDrops, 1000 * 15); // every 15 seconds
     }
 
     return () => {

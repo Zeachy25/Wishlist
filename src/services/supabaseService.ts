@@ -146,6 +146,49 @@ export const searchProducts = async (
   };
 };
 
+// Record a price snapshot for a product
+export const recordPriceSnapshot = async (
+  productId: string,
+  price: number,
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from("price_snapshots").insert({
+      product_id: productId,
+      price: price,
+    });
+
+    if (error) {
+      console.error("Error recording price snapshot:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Error recording price snapshot:", err);
+    return false;
+  }
+};
+
+// Initialize price snapshot for newly wishlist-added product
+export const initializePriceSnapshot = async (
+  productId: string,
+): Promise<boolean> => {
+  try {
+    const product = await getProductById(productId);
+    if (!product) return false;
+
+    // Check if product already has snapshots
+    const history = await getProductPriceHistory(productId);
+    if (history.length === 0) {
+      // Create initial snapshot with current price
+      return recordPriceSnapshot(productId, Number(product.current_price));
+    }
+    return true;
+  } catch (err) {
+    console.error("Error initializing price snapshot:", err);
+    return false;
+  }
+};
+
 export const checkPriceDrops = async (userId: string): Promise<number> => {
   let newAlertCount = 0;
   try {
@@ -170,10 +213,58 @@ export const checkPriceDrops = async (userId: string): Promise<number> => {
 
       const currentPrice = Number(product.current_price);
 
+      // If no snapshots, record current price as baseline
+      if (snapshots.length === 0) {
+        await recordPriceSnapshot(product.id, currentPrice);
+        continue;
+      }
+
+      // If only one snapshot, don't calculate anomaly yet (need baseline)
+      if (buffer.data.length < 2) {
+        // Check if price changed from last recorded snapshot
+        const lastSnapshot = snapshots[snapshots.length - 1];
+        if (lastSnapshot.price !== currentPrice) {
+          const priceDropPercent =
+            ((lastSnapshot.price - currentPrice) / lastSnapshot.price) * 100;
+
+          // Trigger alert for any price drop > 5%
+          if (priceDropPercent > 5) {
+            const { data: existing } = await supabase
+              .from("alerts")
+              .select("*")
+              .eq("product_id", product.id)
+              .eq("new_price", currentPrice)
+              .eq("user_id", userId);
+
+            if (!existing || existing.length === 0) {
+              const { error: insertError } = await supabase
+                .from("alerts")
+                .insert({
+                  user_id: userId,
+                  product_id: product.id,
+                  old_price: lastSnapshot.price,
+                  new_price: currentPrice,
+                  drop_percent: Math.round(priceDropPercent),
+                });
+
+              if (!insertError) {
+                newAlertCount++;
+              } else {
+                console.error("Error inserting price drop alert:", insertError);
+              }
+            }
+          }
+          // Record the new price snapshot
+          await recordPriceSnapshot(product.id, currentPrice);
+        }
+        continue;
+      }
+
+      // Use z-score anomaly detection with lowered threshold (1.0 instead of 1.5)
       const { isAnomaly, zScore } = calculateAnomaly(
         buffer.data,
         currentPrice,
-        1.5,
+        1.0, // LOWERED THRESHOLD for better sensitivity
       );
 
       if (isAnomaly) {
@@ -201,9 +292,8 @@ export const checkPriceDrops = async (userId: string): Promise<number> => {
           };
 
           let insertError = null;
-          let tryPayload = alertPayload;
 
-          const result = await supabase.from("alerts").insert(tryPayload);
+          const result = await supabase.from("alerts").insert(alertPayload);
           insertError = result.error;
 
           if (insertError && insertError.code === "PGRST204") {
@@ -224,6 +314,14 @@ export const checkPriceDrops = async (userId: string): Promise<number> => {
             newAlertCount++;
           }
         }
+      }
+
+      // Record current price snapshot
+      if (
+        snapshots.length === 0 ||
+        snapshots[snapshots.length - 1].price !== currentPrice
+      ) {
+        await recordPriceSnapshot(product.id, currentPrice);
       }
     }
   } catch (err) {

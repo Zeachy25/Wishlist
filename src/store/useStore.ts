@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Alert as RNAlert } from 'react-native';
-import { WishlistItem, Alert, Product, CartItemType } from '../types';
-import { supabase } from '@/config/supabaseConfig';
-import { User } from '@supabase/supabase-js';
-import { 
-  fetchWishlist, 
-  fetchAlerts, 
-  fetchCartItems,
-  fetchProducts
-} from '../services/supabaseService';
+import { supabase } from "@/config/supabaseConfig";
+import { User } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
+import { Alert as RNAlert } from "react-native";
+import {
+    fetchAlerts,
+    fetchCartItems,
+    fetchWishlist,
+    initializePriceSnapshot
+} from "../services/supabaseService";
+import { Alert, CartItemType, Product, WishlistItem } from "../types";
 
 export interface AppState {
   user: User | null;
@@ -22,8 +22,14 @@ export interface AppState {
   ordersCount: number;
   buyNowItem: CartItemType | null;
   followedStores: string[];
-  pastOrders: { id: string; date: string; items: CartItemType[]; total: number; status: string }[];
-  
+  pastOrders: {
+    id: string;
+    date: string;
+    items: CartItemType[];
+    total: number;
+    status: string;
+  }[];
+
   setUser: (user: User | null) => void;
   loadUserData: (uid: string) => Promise<void>;
   addToWishlist: (product: Product) => Promise<void>;
@@ -51,7 +57,9 @@ const calculateCartCount = (items: CartItemType[]) => {
 };
 
 const notifyListeners = () => {
-  Promise.resolve().then(() => listeners.forEach((listener) => listener(state)));
+  Promise.resolve().then(() =>
+    listeners.forEach((listener) => listener(state)),
+  );
 };
 
 let state: AppState = {
@@ -67,7 +75,7 @@ let state: AppState = {
   buyNowItem: null,
   followedStores: [],
   pastOrders: [],
-  
+
   setUser: async (user) => {
     state.user = user;
     if (user) {
@@ -86,111 +94,129 @@ let state: AppState = {
 
   loadUserData: async (uid: string) => {
     try {
-      const [wishlist, alerts, cartItems, { data: orders }] = await Promise.all([
-        fetchWishlist(uid),
-        fetchAlerts(uid),
-        fetchCartItems(uid),
-        supabase.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false })
-      ]);
+      const [wishlist, alerts, cartItems, { data: orders }] = await Promise.all(
+        [
+          fetchWishlist(uid),
+          fetchAlerts(uid),
+          fetchCartItems(uid),
+          supabase
+            .from("orders")
+            .select("*")
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false }),
+        ],
+      );
 
       state.wishlist = wishlist;
       state.alerts = alerts;
-      state.unreadCount = alerts.filter(a => !a.is_read).length;
+      state.unreadCount = alerts.filter((a) => !a.is_read).length;
       state.cartItems = cartItems;
       state.cartCount = calculateCartCount(cartItems);
-      state.pastOrders = (orders || []).map(o => ({
+      state.pastOrders = (orders || []).map((o) => ({
         id: o.id,
         date: o.created_at,
         items: o.items,
         total: o.total,
-        status: o.status
+        status: o.status,
       }));
       state.ordersCount = state.pastOrders.length;
       notifyListeners();
     } catch (e) {
-      console.error('Failed to load user data', e);
+      console.error("Failed to load user data", e);
     }
   },
 
   addToWishlist: async (product) => {
     if (!product || !product.id) return;
-    
+
     if (!state.user) {
-      RNAlert.alert('Login Required', 'Please sign in to add items to your wishlist.');
+      RNAlert.alert(
+        "Login Required",
+        "Please sign in to add items to your wishlist.",
+      );
       return;
     }
-    
-    console.log('Adding to wishlist - User ID:', state.user.id);
-    console.log('Adding to wishlist - Product ID:', product.id);
 
-    const { error } = await supabase
-      .from('wishlist_items')
-      .insert({
-        user_id: state.user.id,
-        product_id: product.id,
-        target_price: product.current_price
-      });
+    console.log("Adding to wishlist - User ID:", state.user.id);
+    console.log("Adding to wishlist - Product ID:", product.id);
+
+    const { error } = await supabase.from("wishlist_items").insert({
+      user_id: state.user.id,
+      product_id: product.id,
+      target_price: product.current_price,
+    });
 
     if (error) {
-      console.error('Error adding to wishlist:', error);
-      if (error.code === '23505') { // Unique violation
+      console.error("Error adding to wishlist:", error);
+      if (error.code === "23505") {
+        // Unique violation
         // Already in wishlist, just update local state if needed
       } else {
-        RNAlert.alert('Error', 'Could not add to wishlist. Please try again.');
+        RNAlert.alert("Error", "Could not add to wishlist. Please try again.");
         return;
       }
     }
 
+    // Initialize price snapshot for price drop tracking
+    await initializePriceSnapshot(product.id);
+
     // Add to local state if not already there
-    if (!state.wishlist.some(w => w.product_id === product.id)) {
-      state.wishlist = [...state.wishlist, { 
-        product_id: product.id, 
-        added_at: new Date().toISOString(), 
-        target_price: product.current_price, 
-        product 
-      }];
+    if (!state.wishlist.some((w) => w.product_id === product.id)) {
+      state.wishlist = [
+        ...state.wishlist,
+        {
+          product_id: product.id,
+          added_at: new Date().toISOString(),
+          target_price: product.current_price,
+          product,
+        },
+      ];
       notifyListeners();
     }
   },
   removeFromWishlist: async (productId) => {
     if (!state.user) return;
     const { error } = await supabase
-      .from('wishlist_items')
+      .from("wishlist_items")
       .delete()
-      .eq('user_id', state.user.id)
-      .eq('product_id', productId);
+      .eq("user_id", state.user.id)
+      .eq("product_id", productId);
 
     if (error) {
-      console.error('Error removing from wishlist:', error);
-      RNAlert.alert('Error', 'Could not remove from wishlist.');
+      console.error("Error removing from wishlist:", error);
+      RNAlert.alert("Error", "Could not remove from wishlist.");
       return;
     }
 
-    state.wishlist = state.wishlist.filter(w => w.product_id !== productId);
+    state.wishlist = state.wishlist.filter((w) => w.product_id !== productId);
     notifyListeners();
   },
   markAlertRead: async (alertId) => {
     const { error } = await supabase
-      .from('alerts')
+      .from("alerts")
       .update({ is_read: true })
-      .eq('id', alertId);
+      .eq("id", alertId);
 
     if (!error) {
-      state.alerts = state.alerts.map(a => a.id === alertId ? { ...a, is_read: true } : a);
-      state.unreadCount = state.alerts.filter(a => !a.is_read).length;
+      state.alerts = state.alerts.map((a) =>
+        a.id === alertId ? { ...a, is_read: true } : a,
+      );
+      state.unreadCount = state.alerts.filter((a) => !a.is_read).length;
       notifyListeners();
     }
   },
   setTargetPrice: async (productId, price) => {
     if (!state.user) return;
     const { error } = await supabase
-      .from('wishlist_items')
+      .from("wishlist_items")
       .update({ target_price: price })
-      .eq('user_id', state.user.id)
-      .eq('product_id', productId);
+      .eq("user_id", state.user.id)
+      .eq("product_id", productId);
 
     if (!error) {
-      state.wishlist = state.wishlist.map(w => w.product_id === productId ? { ...w, target_price: price } : w);
+      state.wishlist = state.wishlist.map((w) =>
+        w.product_id === productId ? { ...w, target_price: price } : w,
+      );
       notifyListeners();
     }
   },
@@ -200,29 +226,33 @@ let state: AppState = {
   },
   setAlerts: (alerts) => {
     state.alerts = alerts;
-    state.unreadCount = alerts.filter(a => !a.is_read).length;
+    state.unreadCount = alerts.filter((a) => !a.is_read).length;
     notifyListeners();
   },
-  
+
   addToCart: async (item: CartItemType) => {
     if (!item || !item.product) return;
 
     if (!state.user) {
-      RNAlert.alert('Login Required', 'Please sign in to add items to your cart.');
+      RNAlert.alert(
+        "Login Required",
+        "Please sign in to add items to your cart.",
+      );
       return;
     }
 
     try {
-      const existingIndex = state.cartItems.findIndex(i => 
-        i.product.id === item.product.id && i.variant === item.variant
+      const existingIndex = state.cartItems.findIndex(
+        (i) => i.product.id === item.product.id && i.variant === item.variant,
       );
-      
+
       if (existingIndex >= 0) {
-        const updatedQuantity = state.cartItems[existingIndex].quantity + item.quantity;
+        const updatedQuantity =
+          state.cartItems[existingIndex].quantity + item.quantity;
         const { error } = await supabase
-          .from('cart_items')
+          .from("cart_items")
           .update({ quantity: updatedQuantity })
-          .eq('id', state.cartItems[existingIndex].id);
+          .eq("id", state.cartItems[existingIndex].id);
 
         if (error) throw error;
 
@@ -231,14 +261,14 @@ let state: AppState = {
         state.cartItems = newItems;
       } else {
         const { data, error } = await supabase
-          .from('cart_items')
+          .from("cart_items")
           .insert({
             user_id: state.user.id,
             product_id: item.product.id,
             quantity: item.quantity,
             price_at_add: item.priceAtAdd,
             variant: item.variant,
-            is_checked: true
+            is_checked: true,
           })
           .select()
           .single();
@@ -249,22 +279,22 @@ let state: AppState = {
           state.cartItems = [...state.cartItems, { ...item, id: data.id }];
         }
       }
-      
+
       state.cartCount = calculateCartCount(state.cartItems);
       notifyListeners();
     } catch (error: any) {
-      console.error('Error adding to cart:', error);
-      RNAlert.alert('Error', error.message || 'Could not add to cart. Please try again.');
+      console.error("Error adding to cart:", error);
+      RNAlert.alert(
+        "Error",
+        error.message || "Could not add to cart. Please try again.",
+      );
     }
   },
   removeFromCart: async (id: string) => {
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from("cart_items").delete().eq("id", id);
 
     if (!error) {
-      state.cartItems = state.cartItems.filter(i => i.id !== id);
+      state.cartItems = state.cartItems.filter((i) => i.id !== id);
       state.cartCount = calculateCartCount(state.cartItems);
       notifyListeners();
     }
@@ -274,23 +304,29 @@ let state: AppState = {
       await state.removeFromCart(id);
     } else {
       const { error } = await supabase
-        .from('cart_items')
+        .from("cart_items")
         .update({ quantity })
-        .eq('id', id);
+        .eq("id", id);
 
       if (!error) {
-        state.cartItems = state.cartItems.map(i => i.id === id ? { ...i, quantity } : i);
+        state.cartItems = state.cartItems.map((i) =>
+          i.id === id ? { ...i, quantity } : i,
+        );
         state.cartCount = calculateCartCount(state.cartItems);
         notifyListeners();
       }
     }
   },
   toggleCartItem: (id: string) => {
-    state.cartItems = state.cartItems.map(i => i.id === id ? { ...i, isChecked: !i.isChecked } : i);
+    state.cartItems = state.cartItems.map((i) =>
+      i.id === id ? { ...i, isChecked: !i.isChecked } : i,
+    );
     notifyListeners();
   },
   toggleSellerItems: (seller: string, isChecked: boolean) => {
-    state.cartItems = state.cartItems.map(i => i.product.seller === seller ? { ...i, isChecked } : i);
+    state.cartItems = state.cartItems.map((i) =>
+      i.product.seller === seller ? { ...i, isChecked } : i,
+    );
     notifyListeners();
   },
   setVoucherDiscount: (amount: number) => {
@@ -308,16 +344,14 @@ let state: AppState = {
   placeOrder: async (items, total) => {
     if (!state.user) return;
     const orderId = `WL-${Math.floor(100000 + Math.random() * 900000)}`;
-    
-    const { error } = await supabase
-      .from('orders')
-      .insert({
-        id: orderId,
-        user_id: state.user.id,
-        items: items,
-        total: total,
-        status: 'To Ship'
-      });
+
+    const { error } = await supabase.from("orders").insert({
+      id: orderId,
+      user_id: state.user.id,
+      items: items,
+      total: total,
+      status: "To Ship",
+    });
 
     if (!error) {
       const newOrder = {
@@ -325,32 +359,38 @@ let state: AppState = {
         date: new Date().toISOString(),
         items: [...items],
         total,
-        status: 'To Ship'
+        status: "To Ship",
       };
-      
+
       state.pastOrders = [newOrder, ...state.pastOrders];
       state.ordersCount = state.pastOrders.length;
-      
+
       // If these items came from the cart, remove them from Supabase
-      const itemIds = items.map(i => i.id).filter(id => state.cartItems.some(ci => ci.id === id));
+      const itemIds = items
+        .map((i) => i.id)
+        .filter((id) => state.cartItems.some((ci) => ci.id === id));
       if (itemIds.length > 0) {
-        await supabase.from('cart_items').delete().in('id', itemIds);
-        state.cartItems = state.cartItems.filter(i => !itemIds.includes(i.id));
+        await supabase.from("cart_items").delete().in("id", itemIds);
+        state.cartItems = state.cartItems.filter(
+          (i) => !itemIds.includes(i.id),
+        );
         state.cartCount = calculateCartCount(state.cartItems);
       }
-      
+
       state.buyNowItem = null;
       notifyListeners();
     }
   },
   toggleFollowStore: (storeName: string) => {
     if (state.followedStores.includes(storeName)) {
-      state.followedStores = state.followedStores.filter(s => s !== storeName);
+      state.followedStores = state.followedStores.filter(
+        (s) => s !== storeName,
+      );
     } else {
       state.followedStores = [...state.followedStores, storeName];
     }
     notifyListeners();
-  }
+  },
 };
 
 const listeners = new Set<(s: AppState) => void>();

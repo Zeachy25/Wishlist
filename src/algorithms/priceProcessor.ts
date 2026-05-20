@@ -31,14 +31,24 @@ export class CircularBuffer {
 
 /**
  * Calculates the mean and standard deviation to determine if a price is an anomaly.
- * An anomaly is flagged if (mean - price) / stdDev > threshold (e.g., 1.5).
+ * An anomaly is flagged if (mean - price) / stdDev > threshold (e.g., 1.0).
+ * This is a price DROP detector, so we're looking for prices significantly LOWER than average.
  */
 export const calculateAnomaly = (
   buffer: PriceSnapshot[],
   currentPrice: number,
-  threshold: number = 1.5
+  threshold: number = 1.0,
 ): { isAnomaly: boolean; zScore: number } => {
-  if (buffer.length < 2) return { isAnomaly: false, zScore: 0 };
+  if (buffer.length < 1) return { isAnomaly: false, zScore: 0 };
+
+  // If only one price point, can't calculate std dev but can check for drop
+  if (buffer.length === 1) {
+    const lastPrice = buffer[0].price;
+    const priceDropPercent = ((lastPrice - currentPrice) / lastPrice) * 100;
+    // Flag as anomaly if price dropped more than 10%
+    const isAnomaly = priceDropPercent > 10;
+    return { isAnomaly, zScore: priceDropPercent / 10 };
+  }
 
   const prices = buffer.map((s) => s.price);
   const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
@@ -57,7 +67,7 @@ export const calculateAnomaly = (
  */
 export const filterByTimeWindow = (
   snapshots: PriceSnapshot[],
-  hours: number
+  hours: number,
 ): PriceSnapshot[] => {
   const now = new Date();
   const limit = new Date(now.getTime() - hours * 60 * 60 * 1000);
