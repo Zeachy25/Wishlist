@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '../../../src/store/useStore';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/config/supabaseConfig';
+import { clearCache } from '../../../src/services/dbService';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -124,6 +125,11 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons name="shield-account-outline" size={24} color="#666666" style={styles.listIcon} />
               <Text style={styles.listItemText}>Privacy Policy</Text>
               <MaterialCommunityIcons name="chevron-right" size={20} color="#CCCCCC" />
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.listItem} onPress={() => { clearCache(); Alert.alert('Cache Cleared', 'Offline data has been cleared.'); }}>
+              <MaterialCommunityIcons name="delete-outline" size={24} color="#666666" style={styles.listIcon} />
+              <Text style={styles.listItemText}>Clear Cache</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.listItem} onPress={handleLogout}>
